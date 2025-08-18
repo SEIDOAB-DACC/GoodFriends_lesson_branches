@@ -1,0 +1,7 @@
+{
+    "sql-friends.sqlserver.azure.root": "provided by Azure",
+    "sql-friends.sqlserver.azure.dbo": "provided by Azure",
+    "sql-friends.sqlserver.azure.supusr": "provided by Azure",
+    "sql-friends.sqlserver.azure.usr": "provided by Azure",
+    "sql-friends.sqlserver.azure.gstusr": "provided by Azure"
+}
