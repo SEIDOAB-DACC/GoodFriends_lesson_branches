@@ -1,0 +1,24 @@
+{
+  "docker-azure-container": "azure-cli",
+  "docker-access": "ssh",
+  "docker-ssh-host": "192.168.68.53",
+  "docker-ssh-user": "martin",
+  "docker-ssh-cmd": "/usr/local/bin/docker",
+  "docker-ssh-host-tmp": "/tmp",
+
+  "tenantId": "your-tenant-id",
+
+  "resourceGroup": "data-access-23445786",
+
+  "kvUri": "https://seido-kv-7505.vault.azure.net/",
+  "kvName": "seido-kv-7505",
+  "kvSecret": "KvSecret-7505",
+  "kvReadClient": "KvReadClient-7505",
+
+  "sqlServer": "seido-sqlserver-23445786",
+
+  "sqlDb": "db-23445786",
+
+  "appservicePlanName": "seido-appserviceplan-23445786",
+  "appserviceName": "seido-webservice-23445786"
+}
