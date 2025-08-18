@@ -1,0 +1,127 @@
+===============================================================================
+                    .NET APPLICATION VERSIONING EXPLAINED
+===============================================================================
+
+OVERVIEW
+--------
+.NET applications use three main version types, each serving different purposes
+in the software development and deployment lifecycle.
+
+THREE MAIN VERSION TYPES
+=========================
+
+1. ASSEMBLYVERSION
+------------------
+Purpose:     Compile-time version for .NET runtime assembly binding
+Format:      Major.Minor.Build.Revision (all 4 parts required)
+Example:     1.0.0.0
+Usage:       - Used by .NET runtime for assembly resolution
+             - Referenced assemblies must match this version exactly
+             - Controls assembly loading compatibility
+Best Practice: Only change for breaking changes to avoid binding issues
+
+2. FILEVERSION
+--------------
+Purpose:     Windows file system version shown in file properties
+Format:      Major.Minor.Build.Revision (all 4 parts required)
+Example:     1.0.0.0
+Usage:       - Displayed in Windows Explorer file properties
+             - Used by Windows installers and deployment tools
+             - Can be incremented with every build
+Best Practice: Increment for every release, including patch releases
+
+3. INFORMATIONALVERSION
+-----------------------
+Purpose:     Product marketing version - human-readable version string
+Format:      Flexible format, supports Semantic Versioning (SemVer)
+Examples:    1.0.2
+             1.0.2-alpha
+             1.0.2-beta.1
+             1.0.2+build.123
+Usage:       - Displayed to end users
+             - Used in logs, about dialogs, API responses
+             - Can include build metadata and pre-release identifiers
+Best Practice: Follow Semantic Versioning (SemVer) format
+
+MICROSOFT'S RECOMMENDED VERSIONING STRATEGY
+===========================================
+
+AssemblyVersion:        Change only for breaking changes
+                       1.0.0.0 → 2.0.0.0 (breaking change)
+
+FileVersion:           Increment for every build
+                       1.0.0.1 → 1.0.0.2 → 1.0.0.3
+
+InformationalVersion:  Follow SemVer for user communication
+                       1.0.0 → 1.0.1 → 1.1.0 → 2.0.0
+
+VERSIONING SCENARIOS
+====================
+
+Major Release with Breaking Changes:
+------------------------------------
+<AssemblyVersion>2.0.0.0</AssemblyVersion>
+<FileVersion>2.0.0.1</FileVersion>
+<InformationalVersion>2.0.0</InformationalVersion>
+
+Patch Release:
+--------------
+<AssemblyVersion>2.0.0.0</AssemblyVersion>     <!-- Unchanged -->
+<FileVersion>2.0.1.15</FileVersion>            <!-- Build number -->
+<InformationalVersion>2.0.1</InformationalVersion>
+
+Pre-release Version:
+--------------------
+<AssemblyVersion>2.0.0.0</AssemblyVersion>
+<FileVersion>2.1.0.5</FileVersion>
+<InformationalVersion>2.1.0-beta.1</InformationalVersion>
+
+ADDITIONAL METADATA
+===================
+
+BuildTime:      Timestamp when assembly was compiled
+BuildMachine:   Computer name where build occurred
+BuildUser:      Username who performed the build
+AssemblyTitle:  Human-readable title of the assembly
+AssemblyDescription: Description of what the assembly does
+AssemblyCompany: Company name
+AssemblyProduct: Product name
+AssemblyCopyright: Copyright information
+
+IMPLEMENTATION IN PROJECT
+==========================
+
+Current Configuration in AppWebApi.csproj:
+-------------------------------------------
+<AssemblyVersion>1.0.0.0</AssemblyVersion>
+<FileVersion>1.0.0.0</FileVersion>
+<InformationalVersion>1.0.2</InformationalVersion>
+
+Build Metadata:
+---------------
+<AssemblyMetadata Include="BuildTime" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd HH:mm:ss&quot;)) UTC" />
+<AssemblyMetadata Include="BuildMachine" Value="$([System.Environment]::MachineName)" />
+<AssemblyMetadata Include="BuildUser" Value="$([System.Environment]::UserName)" />
+
+API ENDPOINT
+============
+
+Endpoint: GET /api/admin/version
+
+Returns complete version information including:
+- All three version types
+- Build metadata (time, machine, user)
+- Assembly information (title, description, company, etc.)
+- Current server time
+- Environment name
+
+BENEFITS
+========
+
+1. Runtime Compatibility: AssemblyVersion ensures proper assembly loading
+2. Deployment Tracking: FileVersion helps track deployments and updates
+3. User Communication: InformationalVersion provides clear release information
+4. Build Traceability: Metadata tracks when, where, and by whom builds were created
+5. Debugging Support: Complete version info aids in troubleshooting
+
+

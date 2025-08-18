@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.7" />
+  </ItemGroup>
+
+  <!-- Microsoft recommended versioning pattern with build time metadata -->
+  <PropertyGroup>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.2</InformationalVersion>
+    <Copyright>Copyright © Seido AB $([System.DateTime]::UtcNow.Year)</Copyright>
+    <Description>This is an API used in Seido's various software developer training courses.</Description>
+    <Company>Seido AB</Company>
+    <Product>Seido Friends Api</Product>
+
+    <!-- Generate assembly info with build timestamp -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- Build timestamp in assembly metadata -->
+  <ItemGroup>
+    <AssemblyMetadata Include="BuildTime" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd HH:mm:ss&quot;)) UTC" />
+    <AssemblyMetadata Include="BuildMachine" Value="$([System.Environment]::MachineName)" />
+    <AssemblyMetadata Include="BuildUser" Value="$([System.Environment]::UserName)" />
+    <AssemblyMetadata Include="CompanyUrl" Value="https://seido.se" />
+  </ItemGroup>
+</Project>
