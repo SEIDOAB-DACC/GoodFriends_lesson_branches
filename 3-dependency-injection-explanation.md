@@ -28,41 +28,60 @@ This means a single instance of `DatabaseConnections` is created and shared thro
 ### Injection and Usage in `AdminController`
 
 The `AdminController` receives an instance of `DatabaseConnections` via its constructor:
-
-```csharp
-public AdminController(
-	Encryptions encryptions,
-	DatabaseConnections dbConnections,
-	ILogger<AdminController> logger,
-	IConfiguration configuration,
-	IOptions<DbConnectionSetsOptions> dbSetOptions,
-	IOptions<AesEncryptionOptions> aesOptions,
-	IOptions<JwtOptions> jwtOptions,
-	IOptions<VersionOptions> versionOptions)
-{
-	_dbConnections = dbConnections;
-	// ...other assignments...
-}
-```
-
 This instance is then used in endpoints such as `DefaultDataUserConnection` and `MigrationUserConnection`:
-
-```csharp
-public IActionResult DefaultDataUserConnection()
-{
-	var info = _dbConnections.GetDataConnectionDetails(_configuration["DatabaseConnections:DefaultDataUser"]);
-	// ...logging and return...
-}
-
-public IActionResult MigrationUserConnection()
-{
-	var info = _dbConnections.GetDataConnectionDetails(_configuration["DatabaseConnections:MigrationUser"]);
-	// ...logging and return...
-}
-```
 
 - The controller does not create or manage the `DatabaseConnections` instance itself; it simply requests it as a dependency.
 - The DI system ensures the same singleton instance is injected wherever it is needed.
+
+---
+
+## Explanation of `DatabaseConnections` and `dbConnections`
+
+### `DatabaseConnections` Class
+
+The `DatabaseConnections` class is a configuration and utility service that manages information about available database connections in the application. It is responsible for:
+
+- Reading connection settings from the application's configuration (such as `appsettings.json` and environment variables).
+- Providing details about the current active data set and its users (e.g., default data user, migration user).
+- Exposing methods to retrieve connection details for specific users, such as `GetDataConnectionDetails`.
+- Exposing a `SetupInfo` property that summarizes the current environment, secret source, active data set, and database server type.
+
+Key members include:
+
+- `GetDataConnectionDetails(string user)`: Returns connection details for a given user in the active data set.
+- `SetupInfo`: Returns a summary of the current database and environment configuration.
+
+The class is constructed with `IConfiguration` and `IOptions<DbConnectionSetsOptions>`, allowing it to access all relevant configuration data and options.
+
+### `dbConnections` in `AdminController`
+
+In `AdminController`, the private field `_dbConnections` is an instance of the `DatabaseConnections` class, injected by the dependency injection system. It is used by endpoints to:
+
+- Retrieve connection details for the default data user and migration user.
+- Provide environment and setup information to API consumers.
+
+This approach centralizes all database connection logic and configuration in a single, reusable service, making the controller code cleaner and easier to maintain.
+
+---
+
+
+## How `Encryptions` is Registered and Used
+
+### Registration in `Program.cs`
+
+In `Program.cs`, the `Encryptions` service is registered with the dependency injection (DI) container as a transient service:
+
+This means a new instance of `Encryptions` is created each time it is requested. This is suitable for stateless services that do not need to maintain shared state between requests.
+
+### Injection and Usage in `AdminController`
+
+The `AdminController` receives an instance of `Encryptions` via its constructor:
+This instance is then used in endpoints such as `EncryptedQuotes` and `DecryptedQuote`:
+
+- The controller does not create or manage the `Encryptions` instance itself; it simply requests it as a dependency.
+- The DI system ensures a new instance is injected for each request, as configured.
+
+---
 
 
 ## Explanation of `EncryptedQuotes` and `DecryptedQuote` Endpoints
@@ -97,54 +116,6 @@ This endpoint accepts an encrypted quote (as a Base64 string) as a query paramet
 
 ---
 
-
-## How `Encryptions` is Registered and Used
-
-### Registration in `Program.cs`
-
-In `Program.cs`, the `Encryptions` service is registered with the dependency injection (DI) container as a transient service:
-
-This means a new instance of `Encryptions` is created each time it is requested. This is suitable for stateless services that do not need to maintain shared state between requests.
-
-### Injection and Usage in `AdminController`
-
-The `AdminController` receives an instance of `Encryptions` via its constructor:
-This instance is then used in endpoints such as `EncryptedQuotes` and `DecryptedQuote`:
-
-- The controller does not create or manage the `Encryptions` instance itself; it simply requests it as a dependency.
-- The DI system ensures a new instance is injected for each request, as configured.
-
----
-
-
-## Explanation of `DatabaseConnections` and `dbConnections`
-
-### `DatabaseConnections` Class
-
-The `DatabaseConnections` class is a configuration and utility service that manages information about available database connections in the application. It is responsible for:
-
-- Reading connection settings from the application's configuration (such as `appsettings.json` and environment variables).
-- Providing details about the current active data set and its users (e.g., default data user, migration user).
-- Exposing methods to retrieve connection details for specific users, such as `GetDataConnectionDetails`.
-- Exposing a `SetupInfo` property that summarizes the current environment, secret source, active data set, and database server type.
-
-Key members include:
-
-- `GetDataConnectionDetails(string user)`: Returns connection details for a given user in the active data set.
-- `SetupInfo`: Returns a summary of the current database and environment configuration.
-
-The class is constructed with `IConfiguration` and `IOptions<DbConnectionSetsOptions>`, allowing it to access all relevant configuration data and options.
-
-### `dbConnections` in `AdminController`
-
-In `AdminController`, the private field `_dbConnections` is an instance of the `DatabaseConnections` class, injected by the dependency injection system. It is used by endpoints to:
-
-- Retrieve connection details for the default data user and migration user.
-- Provide environment and setup information to API consumers.
-
-This approach centralizes all database connection logic and configuration in a single, reusable service, making the controller code cleaner and easier to maintain.
-
----
 
 ## Explanation of `Encryptions` Class
 
