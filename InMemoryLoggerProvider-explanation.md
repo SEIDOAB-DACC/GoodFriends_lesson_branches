@@ -38,3 +38,43 @@ This ensures that the custom logger provider is available throughout your applic
 - `InMemoryLoggerProvider` and `InMemoryLogger` are a textbook example of the Microsoft logger/provider pattern.
 - They allow capturing logs in memory, which is useful for testing or diagnostics.
 - The design is thread-safe and follows the required interfaces for easy integration with ASP.NET Core or other .NET apps.
+
+
+## Configuring Logging with appsettings.json
+The `Logging` section in `appsettings.json` allows you to configure logging behavior for your application and for each logger provider. This is a standard feature in ASP.NET Core and .NET applications.
+
+### Example Structure
+```json
+"Logging": {
+	"LogLevel": {
+		"Default": "Information",
+		"Microsoft": "Warning",
+		"Microsoft.Hosting.Lifetime": "Information"
+	},
+	"Console": {
+		"LogLevel": {
+			"Services": "Information",
+			"AppWebApi.Controllers": "None",
+			"DbRepos": "None"
+		}
+	},
+	"InMemory": {
+		"LogLevel": {
+			"Services": "Information",
+			"AppWebApi.Controllers": "Information",
+			"DbRepos": "Information"
+		}
+	}
+}
+```
+
+### How It Works
+- **LogLevel**: The top-level `LogLevel` section sets the minimum log level for all providers and for specific categories (like namespaces or classes).
+- **Provider-specific settings**: Each provider (e.g., `Console`, `InMemory`) can have its own `LogLevel` section to override the global settings for specific categories.
+- **Category-based filtering**: You can control which log messages are captured or ignored for each part of your application by adjusting the log level for categories (e.g., `AppWebApi.Controllers`).
+
+### Example
+- Setting `"AppWebApi.Controllers": "None"` under `Console` means no logs from controllers will appear in the console.
+- Setting `"AppWebApi.Controllers": "Information"` under `InMemory` means informational logs from controllers will be captured by the in-memory logger.
+
+This flexible configuration allows you to fine-tune logging output for different environments and providers without changing code.
