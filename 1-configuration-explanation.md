@@ -42,3 +42,21 @@ Instead of placing configuration code in a folder within the `AppWebApi` project
 - **Avoids Circular References:** By keeping configuration logic in a separate project, the solution avoids circular dependencies between `AppWebApi` and `Configuration`, which could occur if configuration code in a folder needed to reference types from both directions. This is not possible with a folder structure inside `AppWebApi`.
 
 This modular approach aligns with best practices for large or evolving .NET solutions.
+
+## Code Explanations: Configuration/Options Classes
+
+### AesEncryptionOptions
+This class represents configuration settings for AES encryption. It includes properties for the encryption key, IV (initialization vector), salt, and iteration count. The `HashKeyIv` method allows hashing of the key and IV using a provided hashing function, storing the results in `KeyHash` and `IvHash`. This is useful for securely handling encryption parameters loaded from configuration.
+
+
+### DbConnectionDetailOptions
+Represents the details for a single database connection, including the user login, connection name, and connection string. Used as part of more complex connection configuration.
+
+### DbConnectionSetsOptions & DbSetDetailOptions
+`DbConnectionSetsOptions` groups together multiple sets of database connection details, typically for different data or identity stores. Each set is represented by a `DbSetDetailOptions` object, which includes a tag, server, and a list of connection details.
+
+### JwtOptions
+Holds configuration for JWT (JSON Web Token) authentication, such as token lifetime, signing key, issuer, audience, and validation flags. These settings are used to configure authentication middleware in the web API which will be done in the branch 17-jwt-security
+
+### VersionOptions
+Encapsulates version and build metadata for the application, such as assembly version, file version, informational version, git commit hash, build time, and company/product info. Includes a static method to populate these properties from the current assembly.
