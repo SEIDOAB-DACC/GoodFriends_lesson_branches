@@ -1,3 +1,4 @@
+
 # AppWebApi Project Overview
 
 ## AppWebApi Project Structure and Content
@@ -110,30 +111,30 @@ It configures services, middleware, and the HTTP request pipeline using the mini
 Below is a breakdown of its key sections:
 
 1. **WebApplication Builder Initialization**
-	- `var builder = WebApplication.CreateBuilder(args);` initializes the application builder with default settings and command-line arguments.
+  - `var builder = WebApplication.CreateBuilder(args);` initializes the application builder with default settings and command-line arguments.
 
 2. **CORS Policy Configuration**
-	- The global CORS policy allows any origin, header, and method. 
-	This is essential for enabling frontend applications (such as React or Angular) to interact with the API during development and production.
+  - The global CORS policy allows any origin, header, and method. 
+  This is essential for enabling frontend applications (such as React or Angular) to interact with the API during development and production.
 
 3. **Controller and JSON Serialization Setup**
-	- Controllers are registered, and JSON serialization is configured to ignore reference loops, preventing serialization errors with complex object graphs (e.g., Entity Framework navigation properties).
+  - Controllers are registered, and JSON serialization is configured to ignore reference loops, preventing serialization errors with complex object graphs (e.g., Entity Framework navigation properties).
 
 4. **Swagger/OpenAPI Configuration**
-	- Swagger is set up for API documentation and testing. The configuration includes dynamic versioning and descriptive metadata, 
-	  making it easier for developers and students to understand and test the API endpoints.
+  - Swagger is set up for API documentation and testing. The configuration includes dynamic versioning and descriptive metadata, 
+    making it easier for developers and students to understand and test the API endpoints.
 
 5. **Logging**
-	- Logging providers are configured to output to both the console and debug window, aiding diagnostics and monitoring.
+  - Logging providers are configured to output to both the console and debug window, aiding diagnostics and monitoring.
 
 6. **Middleware Pipeline**
-	- The HTTP request pipeline is configured to:
-	  - Enable Swagger UI for API documentation
-	  - Enforce HTTPS redirection
-	  - Enable CORS
-	  - Enable authorization
-	  - Map controller endpoints
-	- The application is then started with `app.Run();`.
+  - The HTTP request pipeline is configured to:
+    - Enable Swagger UI for API documentation
+    - Enforce HTTPS redirection
+    - Enable CORS
+    - Enable authorization
+    - Map controller endpoints
+  - The application is then started with `app.Run();`.
 
 
 
@@ -145,14 +146,14 @@ It demonstrates basic controller structure, dependency injection, and error hand
 #### AdminController Structure and Endpoints
 
 1. **Controller Attributes**
-	- `[ApiController]` and `[Route("api/[controller]/[action]")]` define routing conventions and enable automatic model validation and response formatting.
+  - `[ApiController]` and `[Route("api/[controller]/[action]")]` define routing conventions and enable automatic model validation and response formatting.
 
 2. **Dependency Injection**
-	- The constructor injects `ILogger<AdminController>` for logging and `IWebHostEnvironment` for environment-specific logic.
+  - The constructor injects `ILogger<AdminController>` for logging and `IWebHostEnvironment` for environment-specific logic.
 
 3. **HelloWorld Endpoint**
-	- `GET: api/admin/helloworld` returns a simple greeting object with a timestamp. This endpoint is useful for connectivity tests and as a template for further endpoints.
+  - `GET: api/admin/helloworld` returns a simple greeting object with a timestamp. This endpoint is useful for connectivity tests and as a template for further endpoints.
 
 4. **Version Endpoint**
-	- `GET: api/admin/version` returns version information extracted from assembly metadata. It demonstrates structured error handling and logging.
+  - `GET: api/admin/version` returns version information extracted from assembly metadata. It demonstrates structured error handling and logging.
 
