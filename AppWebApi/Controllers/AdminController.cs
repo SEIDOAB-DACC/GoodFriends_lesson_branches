@@ -31,6 +31,7 @@ namespace AppWebApi.Controllers
                     from = "a friend",
                     time = DateTime.UtcNow
                 };
+                _logger.LogInformation("HelloWorld endpoint called at {Time}", helloWorldOptions.time);
                 return Ok(helloWorldOptions);
             }
             catch (Exception ex)
