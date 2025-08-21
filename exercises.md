@@ -47,7 +47,19 @@ Add a new endpoint to your controller that accepts a password as a parameter and
 **Bonus:** Add error handling for empty or null passwords.
 
 
+## Exercise 7: Explore DI Service Lifetime
+Controller ServiceLifetimeController uses injected service LifetimeService and has one single endpoint the shows current guid created when the service was instantiated.
+In Program.cs 
+    - add the LifetimeService as Transient and try the endpoint - explain the output
+    - add the LifetimeService as Singleton and try the endpoint - explain the output
+    - add the LifetimeService as Scoped and try the endpoint - explain the output
+
+
+## Exercise 8: Explore DatabaseConnections
+In AdminController explore endpoints DefaultDataUserConnection and MigrationUserConnection using the debugger.
+Explain the what the endpoints returns and how _dbConnections service works.
+
 
 ---
 
-By completing these exercises, you'll practice creating controllers, using dependency injection, and building secure endpoints in ASP.NET Core.
+By completing these exercises, you'll practice creating controllers, using dependency injection, and building endpoints in ASP.NET Core.
