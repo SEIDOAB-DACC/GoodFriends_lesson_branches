@@ -4,7 +4,7 @@
 Write-Host "Checking for outdated NuGet packages..." -ForegroundColor Green
 
 # Change to parent directory
-Set-Location ..
+Set-Location ../..
 
 Write-Host "`n=== Checking for outdated packages ===" -ForegroundColor Yellow
 dotnet list package --outdated
