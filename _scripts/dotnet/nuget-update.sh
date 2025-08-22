@@ -2,7 +2,7 @@
 #To make the .sh file executable
 #sudo chmod +x ./nuget-update.sh
 
-cd ..
+cd ../..
 dotnet list package --outdated
 
 #clear the local nuget cache
