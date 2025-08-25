@@ -43,6 +43,39 @@ Instead of placing configuration code in a folder within the `AppWebApi` project
 
 This modular approach aligns with best practices for large or evolving .NET solutions.
 
+## NuGet Package Dependencies
+
+The `Configuration` project includes several essential NuGet packages that enable its functionality:
+
+### Core Configuration Packages
+- **Microsoft.Extensions.Configuration.Binder (9.0.8):** Provides the ability to bind configuration sections to strongly-typed POCO classes using the options pattern.
+- **Microsoft.Extensions.Configuration.FileExtensions (9.0.8):** Enables reading configuration from file-based sources like JSON, XML, and INI files.
+- **Microsoft.Extensions.Configuration.Json (9.0.8):** Specifically handles JSON configuration sources, essential for reading `appsettings.json` files.
+- **Microsoft.Extensions.Configuration.UserSecrets (9.0.8):** Provides support for the user secrets feature, allowing secure storage of sensitive configuration during development.
+
+### Options Pattern Support
+- **Microsoft.Extensions.Options (9.0.8):** Core package for implementing the options pattern, providing `IOptions<T>`, `IOptionsSnapshot<T>`, and `IOptionsMonitor<T>` interfaces for accessing strongly-typed configuration.
+
+### Logging Infrastructure
+- **Microsoft.Extensions.Logging (9.0.8):** Core logging framework for .NET applications.
+- **Microsoft.Extensions.Logging.Abstractions (9.0.8):** Provides abstractions for logging, allowing the configuration project to log operations without depending on specific logging implementations.
+
+### Security and Cryptography
+- **Microsoft.AspNetCore.Cryptography.KeyDerivation (9.0.8):** Provides key derivation functions for secure password hashing and cryptographic operations, used in conjunction with AES encryption configuration.
+
+### Azure Integration
+- **Azure.Identity (1.15.0):** Provides Azure Active Directory authentication capabilities for accessing Azure resources.
+- **Azure.Security.KeyVault.Secrets (4.8.0):** Enables secure retrieval of secrets from Azure Key Vault.
+- **Azure.Extensions.AspNetCore.Configuration.Secrets (1.4.0):** Integrates Azure Key Vault as a configuration source in ASP.NET Core applications.
+
+### JSON Processing
+- **Newtonsoft.Json (13.0.3):** Popular JSON serialization library for .NET, providing flexible JSON parsing and serialization capabilities.
+
+### Legacy Support
+- **Microsoft.AspNetCore.Hosting.Abstractions (2.3.0):** Provides hosting abstractions for compatibility with older ASP.NET Core patterns and interfaces.
+
+These packages work together to create a comprehensive configuration system that supports multiple sources, strong typing, security, cloud integration, and proper logging.
+
 ## Code Explanations: Configuration/Options Classes
 
 ### AesEncryptionOptions
