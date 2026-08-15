@@ -1,8 +1,10 @@
-﻿using Configuration;
+﻿using Microsoft.OpenApi;
+
+using Configuration;
 using Configuration.Extensions;
+using Configuration.Options;
 using DbContext.Extensions;
 using DbRepos;
-
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,19 +23,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-//adding support for several secret sources and database sources
-//to use either user secrets or azure key vault depending on UseAzureKeyVault tag in appsettings.json
+#region Initializing the standard sw stack using extensions
 builder.Configuration.AddSecrets(builder.Environment);
-
-//use encryption and multiple Database connections and their respective DbContexts
 builder.Services.AddEncryptions(builder.Configuration);
+builder.Services.AddJwtToken(builder.Configuration);
 builder.Services.AddDatabaseConnections(builder.Configuration);
-builder.Services.AddUserBasedDbContext();
-
-// adding verion info
 builder.Services.AddVersionInfo();
+builder.Services.AddInMemoryLogger();
+builder.Services.AddUserBasedDbContext();
+#endregion
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(c =>
@@ -50,12 +49,25 @@ builder.Services.AddSwaggerGen(c =>
         + $"<br>DataSet: {builder.Configuration["DatabaseConnections:UseDataSetWithTag"]}"
         + $"<br>DefaultDataUser: {builder.Configuration["DatabaseConnections:DefaultDataUser"]}"
     });
+
+    // Add JWT Authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+    c.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", doc, null),
+            new List<string>()
+        }
+    });
 });
-
-
-
-//Add InMemoryLoggerProvider logger
-builder.Services.AddInMemoryLogger();
 
 //Inject DbRepos and Services
 builder.Services.AddScoped<AdminDbRepos>();

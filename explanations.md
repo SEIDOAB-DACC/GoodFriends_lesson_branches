@@ -1,353 +1,372 @@
-# Database Scripts and Security Documentation
-
-This document provides comprehensive documentation for the SQL scripts in `DbContext/SqlScripts`, database role management across different database systems, and the authentication mechanism implemented through `gstusr.spLogin`.
+# JWT Security Implementation in GoodFriends AppWebApi
 
 ## Table of Contents
-1. [Overview](#overview)
-2. [SQL Scripts Structure](#sql-scripts-structure)
-3. [Database Role Management by Platform](#database-role-management-by-platform)
-4. [Login System Architecture](#login-system-architecture)
-5. [Security Implementation](#security-implementation)
-6. [Cross-Platform Compatibility](#cross-platform-compatibility)
+1. [What is JWT and How It Works](#what-is-jwt-and-how-it-works)
+2. [JWT Token Generation in Configuration/JwtEncryptions](#jwt-token-generation)
+3. [Swagger Integration with JWT](#swagger-integration-with-jwt)
+4. [Role-Based Database Context Creation](#role-based-database-context-creation)
+5. [Complete Authentication Flow](#complete-authentication-flow)
 
-## Overview
+---
 
-The GoodFriends application implements a comprehensive database security model that works across three major database platforms:
-- **SQL Server** - Full schema-based security with stored procedures
-- **MySQL/MariaDB** - User-based permissions with prefixed naming conventions
-- **PostgreSQL** - Schema-based security with functions and advanced role management
+## What is JWT and How It Works
 
-## SQL Scripts Structure
+### What is JWT?
+**JWT (JSON Web Token)** is a secure way to transmit information between parties as a JSON object. Think of it as a digital passport that proves who you are and what you're allowed to do.
 
-### Directory Organization
+### JWT Structure
+A JWT token consists of three parts separated by dots (`.`):
 ```
-DbContext/SqlScripts/
-├── sqlserver/
-│   ├── initDatabase.sql       # Main initialization script
-│   ├── clearDatabase.sql      # Database cleanup
-│   ├── verify-access.sql      # Access verification
-│   ├── verify-login.sql       # Login testing
-│   └── verify-users.sql       # User management verification
-├── mysql/
-│   ├── initDatabase.sql       # MySQL-specific initialization
-│   ├── clearDatabase.sql      # MySQL cleanup
-│   ├── verify-access.sql      # MySQL access verification
-│   ├── verify-login.sql       # MySQL login testing
-│   └── verify-users.sql       # MySQL user verification
-└── postgres/
-    ├── initDatabase.sql       # PostgreSQL initialization
-    ├── clearDatabase.sql      # PostgreSQL cleanup
-    ├── verify-access.sql      # PostgreSQL access verification
-    ├── verify-login.sql       # PostgreSQL login testing
-    └── verify-users.sql       # PostgreSQL user verification
+header.payload.signature
 ```
 
+1. **Header**: Contains metadata about the token (algorithm used, token type)
+2. **Payload**: Contains claims (user information, roles, permissions)
+3. **Signature**: Ensures the token hasn't been tampered with
 
-## Database Role Management by Platform
+### How JWT Works - Simple Explanation
+1. **Login**: User provides username/password
+2. **Verification**: Server checks credentials against database
+3. **Token Creation**: If valid, server creates a JWT token with user information
+4. **Token Return**: Server sends token back to client
+5. **Future Requests**: Client includes token in HTTP headers
+6. **Token Validation**: Server validates token and extracts user information
+7. **Access Granted**: If valid, server processes the request
 
-### SQL Server Role Management
+### Benefits of JWT
+- **Stateless**: Server doesn't need to store session information
+- **Secure**: Cryptographically signed to prevent tampering
+- **Portable**: Can be used across different services
+- **Self-contained**: Contains all necessary user information
 
-SQL Server uses a hierarchical security model with **schemas**, **users**, **logins**, and **roles**.
+---
 
-#### Key Concepts:
-- **Logins**: Server-level security principals
-- **Users**: Database-level security principals mapped to logins
-- **Schemas**: Logical containers for database objects
-- **Roles**: Security groups that can be assigned permissions
+## JWT Token Generation
 
-#### Implementation:
-```sql
--- Create logins at server level
-CREATE LOGIN gstusr WITH PASSWORD=N'pa$Word1', DEFAULT_DATABASE=[sql-friends]
+### Configuration Structure
+The JWT system is configured through the `JwtOptions` class in `Configuration/Options/JwtOptions.cs`:
 
--- Create users in database
-CREATE USER gstusrUser FROM LOGIN gstusr;
-
--- Create roles
-CREATE ROLE gstUsrRole;
-
--- Grant schema-level permissions
-GRANT SELECT, EXECUTE ON SCHEMA::gstusr to gstUsrRole;
-
--- Assign users to roles
-ALTER ROLE gstUsrRole ADD MEMBER gstusrUser;
-```
-
-#### Schema Structure:
-- `gstusr` - Guest user schema (read-only access to views and procedures)
-- `usr` - Regular user schema (read/write access to data)
-- `supusr` - Super user schema (full access including delete operations)
-- `dbo` - Database owner schema (administrative access)
-
-### MySQL/MariaDB Role Management
-
-MySQL uses a **user-based** permission system with **host-based** access control. Since MySQL doesn't have true schemas like SQL Server, the application uses **naming prefixes** to simulate schema separation.
-
-#### Key Concepts:
-- **Users**: Combined with host specification (user@host)
-- **Roles**: Available in MySQL 8.0+ and MariaDB 10.0.5+
-- **Privileges**: Granted at database, table, or column level
-- **Definer Rights**: Procedures can run with elevated privileges
-
-#### Implementation:
-```sql
--- Create users with host specification
-CREATE USER IF NOT EXISTS 'gstusr'@'%' IDENTIFIED BY 'pa$Word1';
-
--- Create roles (if supported)
-CREATE ROLE IF NOT EXISTS 'gstUsrRole';
-
--- Grant privileges at database level
-GRANT USAGE ON `sql-friends`.* TO 'gstusr'@'%';
-GRANT SELECT ON `sql-friends`.gstusr_* TO 'gstUsrRole';
-
--- Grant role to user
-GRANT 'gstUsrRole' TO 'gstusr'@'%';
-```
-
-#### Naming Convention:
-- `gstusr_*` - Guest user objects (views, procedures)
-- `usr_*` - Regular user objects
-- `supusr_*` - Super user objects (tables, admin procedures)
-- `dbo_*` - Database owner objects
-
-### PostgreSQL Role Management
-
-PostgreSQL has the most sophisticated role system, where **roles can be both users and groups**. It supports **schema-based** security similar to SQL Server but with more flexibility.
-
-#### Key Concepts:
-- **Roles**: Unified concept for users and groups
-- **Schemas**: Logical containers with full namespace support
-- **Inheritance**: Roles can inherit permissions from other roles
-- **Row-Level Security**: Advanced security features (not used in this project)
-
-#### Implementation:
-```sql
--- Create login roles (users)
-CREATE ROLE gstusr WITH LOGIN PASSWORD 'pa$Word1';
-
--- Create group roles
-CREATE ROLE gstusrrole;
-
--- Grant schema permissions
-GRANT USAGE ON SCHEMA gstusr TO gstusrrole;
-GRANT SELECT ON ALL TABLES IN SCHEMA gstusr TO gstusrrole;
-
--- Grant role membership
-GRANT gstusrrole TO gstusr;
-```
-
-#### Schema Structure:
-- `gstusr` - Guest user schema (read-only views and functions)
-- `usr` - Regular user schema
-- `supusr` - Super user schema (data tables and admin functions)
-- `public` - Default schema (used for shared objects)
-
-## Login System Architecture
-
-### gstusr.spLogin Stored Procedure/Function
-
-The login system is implemented through platform-specific stored procedures or functions that validate user credentials and return user information.
-
-#### SQL Server Implementation:
-```sql
-CREATE OR ALTER PROC gstusr.spLogin
-    @UserNameOrEmail NVARCHAR(100),
-    @UserPassword NVARCHAR(200),
-    @UserId UNIQUEIDENTIFIER OUTPUT,
-    @UserName NVARCHAR(100) OUTPUT,
-    @UserRole NVARCHAR(100) OUTPUT
-AS
-BEGIN
-    SET @UserId = NULL;
-    SET @UserName = NULL;
-    SET @UserRole = NULL;
-    
-    SELECT Top 1 @UserId = UserId, @UserName = UserName, @UserRole = UserRole 
-    FROM dbo.Users 
-    WHERE ((UserName = @UserNameOrEmail) OR (Email = @UserNameOrEmail)) 
-      AND ([Password] = @UserPassword);
-
-    IF (@UserId IS NULL)
-        THROW 999999, 'Login error: wrong user or password', 1
-END
-```
-
-#### MySQL Implementation:
-```sql
-CREATE OR REPLACE DEFINER='dbo'@'%' PROCEDURE gstusr_spLogin(
-    IN UserNameOrEmail VARCHAR(100),
-    IN UserPassword VARCHAR(200),
-    OUT UserId CHAR(36),
-    OUT UserName VARCHAR(100),
-    OUT UserRole VARCHAR(100)
-)
-BEGIN
-    SET UserId = NULL;
-    SET UserName = NULL;
-    SET UserRole = NULL;
-
-    SELECT u.UserId, u.UserName, u.UserRole INTO UserId, UserName, UserRole
-    FROM `sql-friends`.dbo_Users u
-    WHERE (u.UserName = UserNameOrEmail OR u.Email = UserNameOrEmail)
-      AND u.Password = UserPassword
-    LIMIT 1;
-
-    IF UserId IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Login error: wrong user or password';
-    END IF;
-END;
-```
-
-#### PostgreSQL Implementation:
-```sql
-CREATE OR REPLACE FUNCTION gstusr."spLogin"(
-    usernameoremail VARCHAR(100),
-    userpassword VARCHAR(200),
-    OUT userid UUID,
-    OUT username VARCHAR(100),
-    OUT userrole VARCHAR(100)
-)
-RETURNS RECORD
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    userid := NULL;
-    username := NULL;
-    userrole := NULL;
-
-    SELECT u."UserId", u."UserName", u."UserRole" 
-    INTO userid, username, userrole
-    FROM dbo."Users" u
-    WHERE (u."UserName" = usernameoremail OR u."Email" = usernameoremail)
-      AND u."Password" = userpassword
-    LIMIT 1;
-
-    IF userid IS NULL THEN
-        RAISE EXCEPTION 'Login error: wrong user or password';
-    END IF;
-END;
-$$;
-```
-
-### LoginDbRepos Integration
-
-The `LoginDbRepos` class in `DbRepos/LoginDbRepos.cs` provides a unified interface to the login system across all database platforms.
-
-#### Key Features:
-1. **Database Detection**: Automatically detects the database type using connection types
-2. **Parameter Mapping**: Maps .NET parameters to database-specific parameter types
-3. **Password Encryption**: Encrypts passwords before sending to database
-4. **Output Parameter Handling**: Manages output parameters differently for each platform
-
-#### Implementation Example:
 ```csharp
-public async Task<ResponseItemDto<LoginUserSessionDto>> LoginUserAsync(LoginCredentialsDto usrCreds)
+public class JwtOptions
 {
-    using (var cmd1 = _dbContext.Database.GetDbConnection().CreateCommand())
-    {
-        var connection = _dbContext.Database.GetDbConnection();
-        
-        if (connection is MySqlConnection)
-        {
-            cmd1.CommandText = "gstusr_spLogin";
-            // MySQL-specific parameter setup
-        }
-        else if (connection is NpgsqlConnection)
-        {
-            cmd1.CommandText = "SELECT userid, username, userrole FROM gstusr.\"spLogin\"(@usernameoremail, @userpassword)";
-            cmd1.CommandType = CommandType.Text;
-            // PostgreSQL-specific parameter setup
-        }
-        else
-        {
-            cmd1.CommandText = "gstusr.spLogin";
-            // SQL Server-specific parameter setup
-        }
-        
-        // Execute and return results
-    }
+    public int LifeTimeMinutes { get; set; }          // How long token is valid
+    public string IssuerSigningKey { get; set; }     // Secret key for signing
+    public string ValidIssuer { get; set; }          // Who issued the token
+    public string ValidAudience { get; set; }        // Who can use the token
+    public bool ValidateIssuerSigningKey { get; set; }
+    public bool ValidateIssuer { get; set; }
+    public bool ValidateAudience { get; set; }
+    public bool RequireExpirationTime { get; set; }
 }
 ```
 
-## Security Implementation
+### Token Creation Process in JwtEncryptions.cs
 
-### Authentication Flow
-1. **Client Request**: User submits username/email and password
-2. **Password Encryption**: `LoginDbRepos` encrypts password using `Encryptions` service
-3. **Database Validation**: Encrypted password is validated against stored hash
-4. **User Information Retrieval**: Valid login returns UserId, UserName, and UserRole
-5. **Session Creation**: Application creates session based on returned user information
-
-### Security Features
-
-#### Password Security:
-- **Encryption**: Passwords are encrypted before database transmission
-- **No Plain Text**: Passwords never transmitted or stored in plain text
-- **Base64 Encoding**: Uses Base64 encoding for encrypted password storage
-
-#### Database Security:
-- **Principle of Least Privilege**: Each role has minimum required permissions
-- **Schema Separation**: Different privilege levels isolated by schemas/prefixes
-- **Stored Procedure Security**: Login logic encapsulated in database procedures
-- **SQL Injection Prevention**: Parameterized queries prevent injection attacks
-
-#### Role-Based Access:
-- **gstusr**: Read-only access to informational views
-- **usr**: Standard CRUD operations on user data
-- **supusr**: Administrative operations including delete
-- **dbo**: Full database administrative access
-
-### Error Handling
-Each platform implements consistent error handling:
-- **SQL Server**: `THROW` statement with custom error codes
-- **MySQL**: `SIGNAL SQLSTATE` with custom messages
-- **PostgreSQL**: `RAISE EXCEPTION` with descriptive messages
-
-## Cross-Platform Compatibility
-
-### Design Patterns
-
-#### 1. Abstraction Layer
-The application uses Entity Framework Core as an abstraction layer, with platform-specific implementations for advanced features like stored procedures.
-
-#### 2. Naming Conventions
-- **SQL Server**: Uses schemas (`gstusr.spLogin`)
-- **MySQL**: Uses prefixes (`gstusr_spLogin`)
-- **PostgreSQL**: Uses quoted schemas (`gstusr."spLogin"`)
-
-#### 3. Data Type Mapping
+#### 1. Claims Creation
 ```csharp
-// SQL Server
-new SqlParameter("UserId", SqlDbType.UniqueIdentifier)
+private IEnumerable<Claim> CreateClaims(Guid TokenId, string Role, IDictionary<string, string> userClaims)
+{
+    // Start with custom user claims (UserId, UserName, etc.)
+    IEnumerable<Claim> claims = new List<Claim>();
+    foreach (var kvp in userClaims)
+    {
+        claims = claims.Append(new Claim(kvp.Key, kvp.Value));
+    }
 
-// MySQL
-new MySqlParameter("UserId", MySqlDbType.Guid)
-
-// PostgreSQL
-new NpgsqlParameter("userid", NpgsqlTypes.NpgsqlDbType.Uuid)
+    // Add standard Microsoft claims for authentication pipeline
+    claims = claims.Append(new Claim(ClaimTypes.Expiration, /*expiration time*/));
+    claims = claims.Append(new Claim(ClaimTypes.NameIdentifier, TokenId.ToString()));
+    claims = claims.Append(new Claim(ClaimTypes.Role, Role));  // Important for authorization
+    
+    return claims;
+}
 ```
 
-#### 4. Procedure vs Function Handling
-- **SQL Server**: Uses stored procedures with OUTPUT parameters
-- **MySQL**: Uses stored procedures with OUT parameters
-- **PostgreSQL**: Uses functions with RETURNS RECORD
+#### 2. Token Generation
+```csharp
+public JwtToken CreateToken(string Role, IDictionary<string, string> userClaims)
+{
+    // Generate unique token ID
+    Guid tokenId = Guid.NewGuid();
+    
+    // Get secret key from configuration (stored in user-secrets)
+    var encryptionKey = System.Text.Encoding.ASCII.GetBytes(_jwtOptions.IssuerSigningKey);
+    
+    // Set expiration time
+    DateTime expireTime = DateTime.UtcNow.AddMinutes(_jwtOptions.LifeTimeMinutes);
 
-### Migration Considerations
+    // Create the actual JWT token
+    var JWToken = new JwtSecurityToken(
+        issuer: _jwtOptions.ValidIssuer,           // Who created this token
+        audience: _jwtOptions.ValidAudience,       // Who can use this token
+        claims: CreateClaims(tokenId, Role, userClaims),  // User information
+        notBefore: DateTime.UtcNow,                // When token becomes valid
+        expires: expireTime,                       // When token expires
+        signingCredentials: new SigningCredentials(
+            new SymmetricSecurityKey(encryptionKey), 
+            SecurityAlgorithms.HmacSha256)         // Cryptographic signature
+    );
 
-When migrating between database platforms:
-1. **Schema Structure**: Update table and object names according to platform conventions
-2. **Permission Model**: Adjust role assignments based on platform capabilities
-3. **Stored Procedures**: Convert procedures to appropriate platform syntax
-4. **Connection Strings**: Update connection parameters for target platform
-5. **Entity Framework**: Update provider packages and configurations
+    // Convert to string format
+    token.EncryptedToken = new JwtSecurityTokenHandler().WriteToken(JWToken);
+    return token;
+}
+```
 
-### Testing and Verification
+#### 3. Token Decryption
+```csharp
+public IDictionary<string, string> GetClaimsFromToken(string encryptedtoken)
+{
+    if (encryptedtoken == null) return null;
 
-Each platform includes verification scripts:
-- **verify-users.sql**: Validates user creation and role assignments
-- **verify-access.sql**: Tests permission levels for each role
-- **verify-login.sql**: Tests the login functionality
+    // Parse the token and extract claims
+    var decodedToken = new JwtSecurityTokenHandler().ReadJwtToken(encryptedtoken);
+    return decodedToken?.Claims?.ToDictionary(c => c.Type, c => c.Value);
+}
+```
 
-This comprehensive approach ensures consistent security and functionality across all supported database platforms while leveraging each platform's specific strengths and capabilities.
+---
+
+## Swagger Integration with JWT
+
+### Swagger Configuration in Program.cs
+
+The Swagger UI is enhanced to support JWT authentication, allowing developers to test protected endpoints:
+
+```csharp
+builder.Services.AddSwaggerGen(c =>
+{
+    // Basic Swagger configuration
+    c.SwaggerDoc("v1", new() { Title = "Seido Friends API", Version = "v2.0" });
+
+    // Add JWT Authentication to Swagger UI
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",                    // Header name
+        Type = SecuritySchemeType.Http,           // HTTP authentication
+        Scheme = "Bearer",                        // Bearer token scheme
+        BearerFormat = "JWT",                     // Token format
+        In = ParameterLocation.Header,            // Where to include token
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    // Require JWT for all endpoints that need authentication
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"              // References the definition above
+                }
+            },
+            new string[] {}                // No specific scopes required
+        }
+    });
+});
+```
+
+### How This Works in Swagger UI
+1. **Authorize Button**: Swagger UI shows a green "Authorize" button
+2. **Token Input**: Click the button to enter your JWT token
+3. **Automatic Headers**: Swagger automatically adds `Authorization: Bearer <token>` to requests
+4. **Testing Protected Endpoints**: You can now test endpoints that require authentication
+
+### JWT Setup in ASP.NET Core Pipeline
+
+The `JWTExtensions.cs` configures ASP.NET Core to use JWT authentication:
+
+```csharp
+public static void AddJwtToken(this IServiceCollection Services, IConfiguration configuration)
+{
+    // Configure ASP.NET Core Authentication
+    Services.AddAuthentication(options => {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options => {
+        var jwtOptions = configuration.GetSection(JwtOptions.Position).Get<JwtOptions>();
+        
+        // Configure how tokens are validated
+        options.TokenValidationParameters = new TokenValidationParameters()
+        {
+            ValidateIssuerSigningKey = jwtOptions.ValidateIssuerSigningKey,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtOptions.IssuerSigningKey)),
+            ValidateIssuer = jwtOptions.ValidateIssuer,
+            ValidIssuer = jwtOptions.ValidIssuer,
+            ValidateAudience = jwtOptions.ValidateAudience,
+            ValidAudience = jwtOptions.ValidAudience,
+            RequireExpirationTime = jwtOptions.RequireExpirationTime,
+            ValidateLifetime = jwtOptions.RequireExpirationTime,
+            ClockSkew = TimeSpan.FromDays(1)  // Allow for time differences
+        };
+    });
+}
+```
+
+---
+
+## Role-Based Database Context Creation
+
+### The Problem
+Different users (Admin, User, Guest) should have access to different database connections with different permission levels. The system needs to:
+1. Extract the user role from the JWT token
+2. Select the appropriate database connection based on that role
+3. Create a DbContext with the correct connection
+
+### How JWT Decoding Works in DbContext Creation
+
+The `DbContextExtensions.cs` implements this functionality:
+
+```csharp
+public static IServiceCollection AddUserBasedDbContext(this IServiceCollection serviceCollection)
+{
+    serviceCollection.AddDbContext<MainDbContext>((serviceProvider, options) => 
+    { 
+        // Get required services
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>(); 
+        var databaseConnections = serviceProvider.GetRequiredService<DatabaseConnections>(); 
+        var jwtEncryptions = serviceProvider.GetRequiredService<JwtEncryptions>(); 
+        var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>(); 
+        
+        // Default to configuration setting
+        var userRole = configuration["DatabaseConnections:DefaultDataUser"];
+        
+        // Try to get user role from JWT token
+        var httpContext = httpContextAccessor.HttpContext; 
+        if (httpContext != null) 
+        { 
+            // Extract JWT token from HTTP request
+            var token = httpContext.GetTokenAsync("access_token").Result;
+            if (token != null)
+            {
+                // Decode the JWT token to get claims
+                var claims = jwtEncryptions.GetClaimsFromToken(token);
+                
+                // Extract user role from claims
+                userRole = claims["UserRole"];  // This was set during login
+            }
+        } 
+        
+        // Get database connection based on user role
+        var conn = databaseConnections.GetDataConnectionDetails(userRole);
+        
+        // Configure Entity Framework with the appropriate connection
+        if (databaseConnections.SetupInfo.DataConnectionServer == DatabaseServer.SQLServer)
+        {
+            options.UseSqlServer(conn.DbConnectionString, 
+                options => options.EnableRetryOnFailure());
+        }
+        // ... other database types
+    });
+}
+```
+
+### Step-by-Step Process
+
+1. **HTTP Request Arrives**: A request comes to a protected endpoint
+2. **JWT Token Extraction**: System extracts JWT from `Authorization` header
+3. **Token Decoding**: `JwtEncryptions.GetClaimsFromToken()` parses the token
+4. **Role Extraction**: Gets `UserRole` claim from decoded token
+5. **Connection Selection**: `DatabaseConnections.GetDataConnectionDetails(userRole)` returns appropriate connection
+6. **DbContext Creation**: Entity Framework creates context with role-specific connection
+7. **Data Access**: Repository uses this context for database operations
+
+### Role-Based Security Benefits
+
+- **Admin Role**: Gets connection with full database permissions
+- **User Role**: Gets connection with limited read/write permissions
+- **Guest Role**: Gets connection with read-only permissions
+- **Security**: Database-level security enforced by connection permissions
+- **Scalability**: Different roles can use different database servers if needed
+
+---
+
+## Complete Authentication Flow
+
+### 1. Login Process (`LoginService.cs`)
+```csharp
+public async Task<ResponseItemDto<LoginUserSessionDto>> LoginUserAsync(LoginCredentialsDto usrCreds)
+{
+    // Verify credentials against database
+    var usrSession = await _repo.LoginUserAsync(usrCreds);
+
+    // Create claims with user information
+    IDictionary<string, string> userClaims = new Dictionary<string, string>();
+    userClaims["UserId"] = usrSession.Item.UserId.ToString();
+    userClaims["UserRole"] = usrSession.Item.UserRole;        // Critical for DB context
+    userClaims["UserName"] = usrSession.Item.UserName;
+
+    // Generate JWT token with user claims
+    usrSession.Item.JwtToken = _jwtEncryptions.CreateToken(
+        usrSession.Item.UserRole, userClaims);
+
+    return usrSession;
+}
+```
+
+### 2. Controller Protection
+Controllers use the `[Authorize]` attribute to require JWT authentication:
+```csharp
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+[HttpGet("RemoveAllSeeds")]
+public async Task<IActionResult> RemoveAllSeeds()
+{
+    // Only Admin role can access this endpoint
+    // DbContext will automatically use Admin database connection
+}
+```
+
+### 3. Request Processing Flow
+1. **Client Request**: Includes `Authorization: Bearer <jwt-token>` header
+2. **ASP.NET Core Middleware**: Validates JWT token signature and expiration
+3. **Claims Extraction**: Populates `HttpContext.User` with claims from token
+4. **Authorization Check**: Verifies user has required role for endpoint
+5. **DbContext Creation**: Uses JWT claims to select appropriate database connection
+6. **Repository Operations**: Execute with role-appropriate database permissions
+7. **Response**: Returns data according to user's permission level
+
+### 4. Security Layers
+- **JWT Signature**: Prevents token tampering
+- **Token Expiration**: Limits exposure time if token is compromised
+- **Role-Based Authorization**: Controls endpoint access
+- **Database-Level Security**: Enforces data access permissions
+- **HTTPS**: Encrypts token transmission
+
+---
+
+## Configuration Requirements
+
+### User Secrets (Development)
+```json
+{
+  "JwtConfig": {
+    "IssuerSigningKey": "your-secret-key-here-must-be-long-enough",
+    "ValidIssuer": "https://yourdomain.com",
+    "ValidAudience": "https://yourdomain.com",
+    "LifeTimeMinutes": 60,
+    "ValidateIssuerSigningKey": true,
+    "ValidateIssuer": true,
+    "ValidateAudience": true,
+    "RequireExpirationTime": true
+  }
+}
+```
+
+### Database Connections by Role
+The system supports different connection strings for different user roles, enabling fine-grained database security at the connection level.
+
+---
+
+## Best Practices Implemented
+
+1. **Secure Key Storage**: JWT signing key stored in user secrets (development) or secure configuration (production)
+2. **Token Expiration**: Tokens have limited lifetime to reduce security exposure
+3. **Role-Based Access**: Different database connections for different user roles
+4. **Stateless Authentication**: No server-side session storage required
+5. **Swagger Integration**: Easy testing and documentation of protected endpoints
+6. **Claim Validation**: Multiple validation layers for token integrity
+7. **HTTPS Enforcement**: Secure token transmission
+
+This JWT implementation provides a robust, scalable security system that protects both API endpoints and database access based on user roles.

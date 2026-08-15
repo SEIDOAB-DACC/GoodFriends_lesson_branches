@@ -10,9 +10,10 @@ public class Pet : IPet, ISeed<Pet>
 
     public virtual string Name { get; set; }
 
+    // Model relationships
+    // One Pet may have an owner Friend
     public virtual IFriend Friend { get; set; }
 
-    public override string ToString() => $"{Name} the {Mood} {Kind}";
 
     #region constructors
     public Pet() { }

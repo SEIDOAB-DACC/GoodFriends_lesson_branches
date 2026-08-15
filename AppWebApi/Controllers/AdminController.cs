@@ -3,25 +3,36 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 
-using Models.DTO;
 using Services;
 using Configuration;
 using Configuration.Options;
+
 using Microsoft.Extensions.Options;
+using Models.DTO;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace AppWebApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]   
+    [Route("api/[controller]/[action]")]
+
+#if !DEBUG    
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+       Policy = null, Roles = "dbo")]
+#endif
+    
     public class AdminController : Controller
     {
-        readonly DatabaseConnections _dbConnections;
-        readonly IAdminService _service;
         readonly ILogger<AdminController> _logger;
+        private readonly DbConnectionSetsOptions _dbSetOptions;
+        readonly AesEncryptionOptions _aesOptions;
+        readonly JwtOptions _jwtOptions;
         readonly VersionOptions _versionOptions;
-
+        readonly IConfiguration _configuration;
+        readonly Encryptions _encryptions = null;
+        readonly DatabaseConnections _dbConnections = null;
+        readonly IAdminService _service;
         //GET: api/admin/environment
         [HttpGet()]
         [ActionName("Environment")]
@@ -40,10 +51,25 @@ namespace AppWebApi.Controllers
                 _logger.LogError($"{nameof(Environment)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-         }
+        }
+        
+        //GET: api/admin/version
+        [HttpGet()]
+        [ActionName("Version")]
+        [ProducesResponseType(typeof(VersionOptions), 200)]
+        public IActionResult Version()
+        {
+            try
+            {
+                return Ok(_versionOptions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving version information");
+                return BadRequest(ex.Message);
+            }
+        }
 
-#if DEBUG
-        //GET: api/admin/seed?count={count}
         [HttpGet()]
         [ActionName("Seed")]
         [ProducesResponseType(200, Type = typeof(GstUsrInfoAllDto))]
@@ -66,6 +92,8 @@ namespace AppWebApi.Controllers
         }
 
         //GET: api/admin/removeseed
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+          Policy = null, Roles = "dbo")]
         [HttpGet()]
         [ActionName("RemoveSeed")]
         [ProducesResponseType(200, Type = typeof(GstUsrInfoAllDto))]
@@ -110,23 +138,7 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);  
             }       
         }
-#endif
-        [HttpGet()]
-        [ActionName("Version")]
-        [ProducesResponseType(typeof(VersionOptions), 200)]
-        public IActionResult Version()
-        {
-            try
-            {
-                _logger.LogInformation($"{nameof(Version)}:\n{JsonConvert.SerializeObject(_versionOptions)}");
-                return Ok(_versionOptions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving version information");
-                return BadRequest(ex.Message);
-            }
-        }
+
         //GET: api/admin/log
         [HttpGet()]
         [ActionName("Log")]
@@ -141,13 +153,27 @@ namespace AppWebApi.Controllers
             return Ok("No messages in log");
         }
 
-        public AdminController(IAdminService service, ILogger<AdminController> logger,
-                DatabaseConnections dbConnections, IOptions<VersionOptions> versionOptions)
+        public AdminController(ILogger<AdminController> logger,
+                    IConfiguration configuration,
+                    IOptions<DbConnectionSetsOptions> dbSetOptions,
+                    IOptions<AesEncryptionOptions> aesOptions,
+                    IOptions<JwtOptions> jwtOptions,
+                    IOptions<VersionOptions> versionOptions,
+                    Encryptions encryptions, DatabaseConnections dbConnections,
+                    IAdminService service)
         {
-            _service = service;
             _logger = logger;
-            _dbConnections = dbConnections;
+
+            _dbSetOptions = dbSetOptions.Value;
+            _aesOptions = aesOptions.Value;
+            _jwtOptions = jwtOptions.Value;
             _versionOptions = versionOptions.Value;
+            _configuration = configuration;
+
+            _encryptions = encryptions;
+            _dbConnections = dbConnections;
+
+            _service = service;
         }
     }
 }

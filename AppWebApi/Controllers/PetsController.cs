@@ -13,6 +13,8 @@ namespace AppWebApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]/[action]")]
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+        Policy = null, Roles = "usr, supusr, dbo")]
     public class PetsController : Controller
     {
         readonly IPetsService _service = null;
@@ -81,6 +83,8 @@ namespace AppWebApi.Controllers
         }
 
         //DELETE: api/pets/deleteitem/id
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpDelete("{id}")]
         [ProducesResponseType(200, Type = typeof(IPet))]
         [ProducesResponseType(400, Type = typeof(string))]
@@ -106,6 +110,8 @@ namespace AppWebApi.Controllers
         }
 
         //GET: api/pets/readitemdto
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpGet()]
         [ActionName("ReadItemDto")]
         [ProducesResponseType(200, Type = typeof(PetCuDto))]
@@ -139,6 +145,8 @@ namespace AppWebApi.Controllers
 
         //PUT: api/pets/updateitem/id
         //Body: PetCUdto in Json
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpPut("{id}")]
         [ActionName("UpdateItem")]
         [ProducesResponseType(200, Type = typeof(IPet))]
@@ -167,6 +175,8 @@ namespace AppWebApi.Controllers
 
         //POST: api/pets/createitem
         //Body: PetCUdto in Json
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpPost()]
         [ActionName("CreateItem")]
         [ProducesResponseType(200, Type = typeof(IPet))]

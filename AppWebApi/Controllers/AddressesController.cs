@@ -13,6 +13,8 @@ namespace AppWebApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]/[action]")]
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+        Policy = null, Roles = "usr, supusr, dbo")]
     public class AddressesController : Controller
     {
         readonly IAddressesService _service;
@@ -80,6 +82,8 @@ namespace AppWebApi.Controllers
         }
 
         //DELETE: api/addresses/deleteitem/id
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpDelete("{id}")]
         [ActionName("DeleteItem")]
         [ProducesResponseType(200, Type = typeof(IAddress))]
@@ -106,6 +110,8 @@ namespace AppWebApi.Controllers
         }
 
         //GET: api/addresses/readitemdto
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpGet()]
         [ActionName("ReadItemDto")]
         [ProducesResponseType(200, Type = typeof(AddressCuDto))]
@@ -140,6 +146,8 @@ namespace AppWebApi.Controllers
 
         //PUT: api/addresses/updateitem/id
         //Body: AddressCUdto in Json
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpPut("{id}")]
         [ActionName("UpdateItem")]
         [ProducesResponseType(200, Type = typeof(IAddress))]
@@ -168,6 +176,8 @@ namespace AppWebApi.Controllers
 
         //POST: api/addresses/createitem
         //Body: csAddressCUdto in Json
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpPost()]
         [ActionName("CreateItem")]
         [ProducesResponseType(200, Type = typeof(IAddress))]

@@ -13,6 +13,9 @@ namespace AppWebApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]/[action]")]
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+        Policy = null, Roles = "usr, supusr, dbo")]
+
     public class FriendsController : Controller
     {
         readonly IFriendsService _service = null;
@@ -79,6 +82,8 @@ namespace AppWebApi.Controllers
         }
 
         //DELETE: api/friends/deleteitem/id
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpDelete("{id}")]
         [ActionName("DeleteItem")]
         [ProducesResponseType(200, Type = typeof(IFriend))]
@@ -105,6 +110,8 @@ namespace AppWebApi.Controllers
         }
 
         //GET: api/friends/readitemdto
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpGet()]
         [ActionName("ReadItemDto")]
         [ProducesResponseType(200, Type = typeof(FriendCuDto))]
@@ -166,6 +173,8 @@ namespace AppWebApi.Controllers
 
         //POST: api/friends/createitem
         //Body: csFriendCUdto in Json
+        [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+            Policy = null, Roles = "supusr, dbo")]
         [HttpPost()]
         [ActionName("CreateItem")]
         [ProducesResponseType(200, Type = typeof(IFriend))]

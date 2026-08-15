@@ -181,7 +181,7 @@ public class AdminDbRepos
         return await DbInfo();
     }
 
-       public async Task<ResponseItemDto<UsrInfoDto>> SeedUsersAsync(int nrOfUsers, int nrOfSuperUsers, int nrOfDbOwners)
+    public async Task<ResponseItemDto<UsrInfoDto>> SeedUsersAsync(int nrOfUsers, int nrOfSuperUsers, int nrOfDbOwners)
     {
         _logger.LogInformation($"Seeding {nrOfUsers} users and {nrOfSuperUsers} superusers");
         

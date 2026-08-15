@@ -8,10 +8,9 @@ public class Quote : IQuote, ISeed<Quote>, IEquatable<Quote>
     public virtual string QuoteText { get; set; }
     public virtual string Author { get; set; }
 
-    //One Quote can have many friends
+    // Model relationships
+    // One Quote may have many friends
     public virtual List<IFriend> Friends { get; set; } = null;
-
-    public override string ToString() => $"{QuoteText} - {Author}";
 
 
     #region constructors
