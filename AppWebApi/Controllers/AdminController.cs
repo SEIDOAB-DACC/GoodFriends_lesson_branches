@@ -7,8 +7,8 @@ using Configuration;
 using Configuration.Options;
 
 using Microsoft.Extensions.Options;
+using Models;
 using Seido.Utilities.SeedGenerator;
-using AppWebApi.Models;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

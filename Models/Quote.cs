@@ -1,6 +1,6 @@
 ﻿using Seido.Utilities.SeedGenerator;
 
-namespace AppWebApi.Models;
+namespace Models;
 
 public class Quote : IQuote, IEquatable<Quote>
 {

@@ -1,4 +1,4 @@
-﻿namespace AppWebApi.Models;
+﻿namespace Models;
 
 public interface IQuote
 {
