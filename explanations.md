@@ -1,129 +1,76 @@
+# Explanation of `Configuration/Extensions` and `DbContext/Extensions`
 
-# Navigation Properties in DbModels Project
-
-This document explains in detail how navigation properties are implemented in all models within the `DbModels` project, focusing on Entity Framework Core (EFC) mapping strategies and the use of the `[NotMapped]` attribute.
-
----
-
-## General Pattern
-
-In the `DbModels` project, models often inherit from base classes or interfaces. Navigation properties are managed to:
-
-- Allow EFC to map relationships using concrete types (e.g., `FriendDbM`)
-- Allow the rest of the application to use abstractions (e.g., `IFriend`)
-
-- Avoid EFC mapping errors by marking interface-based navigation properties with `[NotMapped]`
-- Convert the concrete database relationship to an abstract relationship.
-- Prevent unwanted serialization of concrete database relationship with `[JsonIgnore]`
+This document explains the purpose and structure of the files and classes found in the `Configuration/Extensions` and `DbContext/Extensions` folders. It also describes how these extension methods simplify application setup in `Program.cs` by encapsulating configuration and service registration logic.
 
 ---
 
-## Model-by-Model Details
+## 1. `Configuration/Extensions`
 
+This folder contains static extension classes that encapsulate common configuration and service registration patterns. Each class provides methods that extend `IServiceCollection` or `IConfigurationBuilder`, allowing for clean, modular, and reusable setup code in `Program.cs`.
 
-### AddressDbM
+### Main Classes:
 
+- **DatabaseExtensions**
+  - Adds and configures database connection options and services.
+  - Example method: `AddDatabaseConnections(IServiceCollection, IConfiguration)`
+- **EncryptionExtensions**
+  - Registers encryption-related options and services.
+  - Example method: `AddEncryptions(IServiceCollection, IConfiguration)`
+- **LoggerExtensions**
+  - Adds a custom in-memory logger provider.
+  - Example method: `AddInMemoryLogger(IServiceCollection)`
+- **SecretsExtensions**
+  - Configures secret storage, supporting both user secrets and Azure Key Vault, based on environment and configuration.
+  - Example method: `AddSecrets(IConfigurationBuilder, IHostEnvironment, string)`
+- **VersionExtensions**
+  - Registers version information from assembly metadata.
+  - Example method: `AddVersionInfo(IServiceCollection)`
+
+#### **How it simplifies `Program.cs`**
+Instead of cluttering `Program.cs` with detailed configuration and service registration logic, you can simply call these extension methods. This keeps the startup code clean and focused on high-level application flow.
+
+**Example usage in `Program.cs`:**
 ```csharp
-[NotMapped] // removed from EFC
-// The getter converts the concrete List<FriendDbM> to List<IFriend> so the rest of the app can use abstractions,
-// even though EFC only maps the concrete FriendsDbM property.
-public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-
-[JsonIgnore] // do not include in any json response from the WebApi
-public List<FriendDbM> FriendsDbM { get; set; } = null;
+builder.Services
+    .AddDatabaseConnections(builder.Configuration)
+    .AddEncryptions(builder.Configuration)
+    .AddInMemoryLogger()
+    .AddVersionInfo();
 ```
 
-- **[NotMapped]**: Prevents EFC from mapping the interface-based `Friends` property.
-- **Concrete Navigation**: `FriendsDbM` is mapped by EFC and used for database relationships.
-- **Convert Navigation to Abstraction** Convert the concrete database relationship to an abstract relationship.
-- **Purpose**: Allows the application to work with `IFriend` while EFC works with `FriendDbM`.
-
 ---
 
+## 2. `DbContext/Extensions`
 
-### FriendDbM
+This folder contains extension classes for configuring Entity Framework Core `DbContext` services, both at runtime and design-time (for migrations).
 
+### Main Classes:
+
+- **DbContextExtensions**
+  - Registers the application's main `DbContext` with dependency injection, using connection details from configuration and supporting multiple database providers (SQL Server, MySQL, PostgreSQL).
+  - Example method: `AddUserBasedDbContext(IServiceCollection)`
+- **DbContextDesignTimeExtensions**
+  - Provides helpers for configuring the `DbContext` at design-time (e.g., for EF Core migrations), including reading secrets and connection info as in the main app.
+  - Example method: `ConfigureForDesignTime(DbContextOptionsBuilder, Func<DbContextOptionsBuilder, string, DbContextOptionsBuilder>)`
+
+#### **How it simplifies `Program.cs` and migrations**
+- Keeps all `DbContext` setup logic in one place, making it easy to switch database providers or update connection logic.
+- Ensures that both runtime and design-time (migrations) use consistent configuration patterns.
+
+**Example usage in `Program.cs`:**
 ```csharp
-[NotMapped]
-// The getter returns the concrete AddressDbM as IAddress, so the app can use the abstraction while EFC only maps AddressDbM.
-public override IAddress Address { get => AddressDbM; set => new NotImplementedException(); }
-
-[JsonIgnore]
-[ForeignKey("AddressId")]
-public AddressDbM AddressDbM { get; set; } = null;
-
-[NotMapped]
-// The getter converts the concrete List<PetDbM> to List<IPet> for abstraction use in the app.
-public override List<IPet> Pets { get => PetsDbM?.ToList<IPet>(); set => new NotImplementedException(); }
-
-[JsonIgnore]
-public List<PetDbM> PetsDbM { get; set; } = null;
-
-[NotMapped]
-// The getter converts the concrete List<QuoteDbM> to List<IQuote> for abstraction use in the app.
-public override List<IQuote> Quotes { get => QuotesDbM?.ToList<IQuote>(); set => new NotImplementedException(); }
-
-[JsonIgnore]
-public List<QuoteDbM> QuotesDbM { get; set; } = null;
+builder.Services.AddUserBasedDbContext();
 ```
 
-- **[NotMapped]**: Used on all interface-based navigation properties (`Address`, `Pets`, `Quotes`).
-- **Concrete Navigation**: EFC maps `AddressDbM`, `PetsDbM`, and `QuotesDbM` for relationships.
-- **Convert Navigation to Abstraction** Convert the concrete database relationship to an abstract relationship.
-- **Purpose**: Ensures correct object graphs and EFC compatibility.
+---
+
+## **Benefits of Using Extension Methods for Application Building**
+- **Separation of Concerns:** Keeps configuration and registration logic out of `Program.cs`.
+- **Reusability:** Extension methods can be reused across multiple projects or services.
+- **Maintainability:** Changes to configuration logic are isolated to extension classes.
+- **Readability:** `Program.cs` remains concise and easy to understand.
 
 ---
 
-
-### PetDbM
-
-```csharp
-[ForeignKey("FriendId")]
-[JsonIgnore]
-public FriendDbM FriendDbM { get; set; } = null;
-
-[NotMapped]
-// The getter returns the concrete FriendDbM as IFriend, so the app can use the abstraction while EFC only maps FriendDbM.
-public override IFriend Friend { get => FriendDbM; set => new NotImplementedException(); }
-```
-
-- **[NotMapped]**: Prevents EFC from mapping the interface-based `Friend` property.
-- **Concrete Navigation**: EFC maps `FriendDbM` for the relationship.
-- **Convert Navigation to Abstraction** Convert the concrete database relationship to an abstract relationship.
-- **Purpose**: Allows the application to use `IFriend` while EFC uses `FriendDbM`.
-
----
-
-
-### QuoteDbM
-
-```csharp
-[NotMapped]
-// The getter converts the concrete List<FriendDbM> to List<IFriend> so the rest of the app can use abstractions,
-// even though EFC only maps the concrete FriendsDbM property.
-public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-
-[JsonIgnore]
-public List<FriendDbM> FriendsDbM { get; set; } = null;
-```
-
-- **[NotMapped]**: Prevents EFC from mapping the interface-based `Friends` property.
-- **Concrete Navigation**: EFC maps `FriendsDbM` for the relationship.
-- **Convert Navigation to Abstraction** Convert the concrete database relationship to an abstract relationship.
-- **Purpose**: Ensures correct object graphs and EFC compatibility.
-
----
-
-## Why Use This Pattern?
-
-- **[NotMapped]**: Prevents EFC from attempting to map properties it cannot handle (like interface-based lists or properties).
-- **Concrete Navigation**: Ensures EFC can create the correct foreign key relationships and load related entities.
-- **Convert Navigation to Abstraction** Convert the concrete database relationship to an abstract relationship.
-- **Object Graph Consistency**: The interface-based property allows the rest of the application to work with abstractions, while the concrete property ensures correct data loading and persistence.
-- **[JsonIgnore]**: Prevents unwanted serialization of concrete database relationship
-
----
-
-## Conclusion
-
-By combining `[NotMapped]` on interface-based navigation properties with concrete navigation properties for EFC, the `DbModels` project achieves both clean domain abstractions and correct database relationships. This approach is essential when working with inheritance and interfaces in EFC models.
+**In summary:**
+The use of extension methods in `Configuration/Extensions` and `DbContext/Extensions` enables a modular, maintainable, and scalable approach to configuring services and application components, simplifying the application startup process.

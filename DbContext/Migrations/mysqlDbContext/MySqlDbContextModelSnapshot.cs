@@ -17,48 +17,50 @@ namespace DbContext.Migrations.mysqlDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("DbModels.AddressDbM", b =>
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
                 {
-                    b.Property<Guid>("AddressId")
+                    b.Property<Guid>("CreditCardId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("City")
+                    b.Property<string>("EncryptedToken")
                         .HasColumnType("varchar(200)");
 
-                    b.Property<string>("Country")
+                    b.Property<string>("ExpirationMonth")
                         .HasColumnType("varchar(200)");
 
-                    b.Property<string>("StreetAddress")
+                    b.Property<string>("ExpirationYear")
                         .HasColumnType("varchar(200)");
 
-                    b.Property<int>("ZipCode")
+                    b.Property<int>("Issuer")
                         .HasColumnType("int");
 
-                    b.HasKey("AddressId");
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
 
-                    b.ToTable("Addresses");
+                    b.Property<Guid?>("OwnerDbMOwnerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("OwnerDbMOwnerId");
+
+                    b.ToTable("CreditCards");
                 });
 
-            modelBuilder.Entity("DbModels.FriendDbM", b =>
+            modelBuilder.Entity("DbModels.OwnerDbM", b =>
                 {
-                    b.Property<Guid>("FriendId")
+                    b.Property<Guid>("OwnerId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
-
-                    b.Property<Guid?>("AddressId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime?>("Birthday")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("varchar(200)");
 
                     b.Property<string>("FirstName")
                         .HasColumnType("varchar(200)");
@@ -66,113 +68,26 @@ namespace DbContext.Migrations.mysqlDbContext
                     b.Property<string>("LastName")
                         .HasColumnType("varchar(200)");
 
-                    b.HasKey("FriendId");
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("tinyint(1)");
 
-                    b.HasIndex("AddressId");
+                    b.HasKey("OwnerId");
 
-                    b.ToTable("Friends");
+                    b.ToTable("Owners");
                 });
 
-            modelBuilder.Entity("DbModels.PetDbM", b =>
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
                 {
-                    b.Property<Guid>("PetId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                    b.HasOne("DbModels.OwnerDbM", "OwnerDbM")
+                        .WithMany("CreditCardsDbM")
+                        .HasForeignKey("OwnerDbMOwnerId");
 
-                    b.Property<Guid>("FriendId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Mood")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("varchar(200)");
-
-                    b.HasKey("PetId");
-
-                    b.HasIndex("FriendId");
-
-                    b.ToTable("Pets", "supusr");
+                    b.Navigation("OwnerDbM");
                 });
 
-            modelBuilder.Entity("DbModels.QuoteDbM", b =>
+            modelBuilder.Entity("DbModels.OwnerDbM", b =>
                 {
-                    b.Property<Guid>("QuoteId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Author")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("QuoteText")
-                        .HasColumnType("varchar(200)");
-
-                    b.HasKey("QuoteId");
-
-                    b.ToTable("Quotes");
-                });
-
-            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
-                {
-                    b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
-
-                    b.HasIndex("QuotesDbMQuoteId");
-
-                    b.ToTable("FriendDbMQuoteDbM");
-                });
-
-            modelBuilder.Entity("DbModels.FriendDbM", b =>
-                {
-                    b.HasOne("DbModels.AddressDbM", "AddressDbM")
-                        .WithMany("FriendsDbM")
-                        .HasForeignKey("AddressId");
-
-                    b.Navigation("AddressDbM");
-                });
-
-            modelBuilder.Entity("DbModels.PetDbM", b =>
-                {
-                    b.HasOne("DbModels.FriendDbM", "FriendDbM")
-                        .WithMany("PetsDbM")
-                        .HasForeignKey("FriendId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FriendDbM");
-                });
-
-            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
-                {
-                    b.HasOne("DbModels.FriendDbM", null)
-                        .WithMany()
-                        .HasForeignKey("FriendsDbMFriendId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DbModels.QuoteDbM", null)
-                        .WithMany()
-                        .HasForeignKey("QuotesDbMQuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("DbModels.AddressDbM", b =>
-                {
-                    b.Navigation("FriendsDbM");
-                });
-
-            modelBuilder.Entity("DbModels.FriendDbM", b =>
-                {
-                    b.Navigation("PetsDbM");
+                    b.Navigation("CreditCardsDbM");
                 });
 #pragma warning restore 612, 618
         }

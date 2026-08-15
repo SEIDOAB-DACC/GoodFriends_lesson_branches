@@ -16,27 +16,28 @@ public class AdminDbRepos
     private Encryptions _encryptions;
     private readonly MainDbContext _dbContext;
 
-    public AdminDbRepos(ILogger<AdminDbRepos> logger, Encryptions encryptions, MainDbContext context)
-    {
-        _logger = logger;
-        _encryptions = encryptions;
-        _dbContext = context;
-    }
-
     public async Task SeedAsync(int nrItems)
     {
         //Create a seeder
         var fn = Path.GetFullPath(_seedSource);
         var seeder = new SeedGenerator(fn);
 
-        //remove existing quotes in the database
-        _dbContext.Quotes.RemoveRange(_dbContext.Quotes);
+        var owners = seeder.ItemsToList<OwnerDbM>(nrItems);
+        foreach (var owner in owners)
+        {
+            owner.CreditCardsDbM = seeder.ItemsToList<CreditCardDbM>(seeder.Next(0,40));
+        }
 
-        //Seeding new quotes into the database
-        var quotes = seeder.AllQuotes.Select(q => new QuoteDbM(q)).ToList();
-        _dbContext.Quotes.AddRange(quotes);
+        _dbContext.Owners.AddRange(owners);
 
         //Save changes to the database
         await _dbContext.SaveChangesAsync();
+    }
+
+    public AdminDbRepos(ILogger<AdminDbRepos> logger, Encryptions encryptions, MainDbContext context)
+    {
+        _logger = logger;
+        _encryptions = encryptions;
+        _dbContext = context;
     }
 }
