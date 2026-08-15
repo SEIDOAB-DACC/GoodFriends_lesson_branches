@@ -7,8 +7,8 @@ using Configuration;
 using Configuration.Options;
 
 using Microsoft.Extensions.Options;
-using AppWebApi.Models;
 using Seido.Utilities.SeedGenerator;
+using AppWebApi.Models;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,7 +19,7 @@ namespace AppWebApi.Controllers
     public class AdminController : Controller
     {
         readonly Encryptions _encryptions = null;
-        readonly DatabaseConnections _dbConnections = null;
+        private readonly DatabaseConnections _dbConnections = null;
         readonly ILogger<AdminController> _logger;
         private readonly DbConnectionSetsOptions _dbSetOptions;
         readonly AesEncryptionOptions _aesOptions;
@@ -95,10 +95,11 @@ namespace AppWebApi.Controllers
         {
             try
             {
+               _logger.LogInformation($"{nameof(Key)}");
                 var keyOptions = new
                 {
                     SecretStorage = _configuration["ApplicationSecrets:SecretStorage"],
-                    MigrationUser = _configuration["DatabaseConnections:MigrationUser"],
+                    MigrationDataUser = _configuration["DatabaseConnections:MigrationDataUser"],
                     DefaultDataUser = _configuration["DatabaseConnections:DefaultDataUser"],
                     UseDataSetWithTag = _configuration["DatabaseConnections:UseDataSetWithTag"],
                 };
@@ -106,9 +107,10 @@ namespace AppWebApi.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError($"{nameof(Key)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
+         }
 
         //GET: api/admin/options1
         [HttpGet()]
@@ -118,13 +120,15 @@ namespace AppWebApi.Controllers
         {
             try
             {
+               _logger.LogInformation($"{nameof(Options1)}");
                 return Ok(_dbSetOptions);
             }
             catch (Exception ex)
             {
+                _logger.LogError($"{nameof(Options1)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
+         }
 
         //GET: api/admin/options1
         [HttpGet()]
@@ -134,13 +138,15 @@ namespace AppWebApi.Controllers
         {
             try
             {
-                return Ok(_aesOptions);
+               _logger.LogInformation($"{nameof(Options2)}");
+               return Ok(_aesOptions);
             }
             catch (Exception ex)
             {
+                _logger.LogError($"{nameof(Options2)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
+         }
 
         //GET: api/admin/options1
         [HttpGet()]
@@ -150,13 +156,15 @@ namespace AppWebApi.Controllers
         {
             try
             {
+                _logger.LogInformation($"{nameof(Options3)}");
                 return Ok(_jwtOptions);
             }
             catch (Exception ex)
             {
+                _logger.LogError($"{nameof(Options3)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
+         }
 
         //GET: api/admin/version
         [HttpGet()]
@@ -198,7 +206,7 @@ namespace AppWebApi.Controllers
             }
         }
 
-        //GET: api/admin/encryptedquotes
+       //GET: api/admin/encryptedquotes
         [HttpGet()]
         [ActionName("EncryptedQuotes")]
         [ProducesResponseType(200, Type = typeof(List<string>))]
@@ -243,6 +251,20 @@ namespace AppWebApi.Controllers
             }
         }
 
+        //GET: api/admin/log
+        [HttpGet()]
+        [ActionName("Log")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<LogMessage>))]
+        public async Task<IActionResult> Log([FromServices] ILoggerProvider _loggerProvider)
+        {
+            //Note the way to get the LoggerProvider, not the logger from Services via DI
+            if (_loggerProvider is InMemoryLoggerProvider cl)
+            {
+                return Ok(await cl.MessagesAsync);
+            }
+            return Ok("No messages in log");
+        }
+
         public AdminController(Encryptions encryptions, DatabaseConnections dbConnections, ILogger<AdminController> logger,
                     IConfiguration configuration,
                     IOptions<DbConnectionSetsOptions> dbSetOptions,
@@ -251,14 +273,14 @@ namespace AppWebApi.Controllers
                     IOptions<VersionOptions> versionOptions)
         {
             _encryptions = encryptions;
-            _dbConnections = dbConnections;
             _logger = logger;
+            _dbConnections = dbConnections;
 
             _dbSetOptions = dbSetOptions.Value;
             _aesOptions = aesOptions.Value;
             _jwtOptions = jwtOptions.Value;
-            _versionOptions = versionOptions.Value;
             _configuration = configuration;
+            _versionOptions = versionOptions.Value;
         }
     }
 }

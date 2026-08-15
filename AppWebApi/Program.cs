@@ -47,21 +47,18 @@ builder.Services.Configure<DbConnectionSetsOptions>(
 // Registering database connections service
 builder.Services.AddSingleton<DatabaseConnections>();
 
-// adding verion info
+// adding version info
 builder.Services.Configure<VersionOptions>(options =>VersionOptions.ReadFromAssembly(options));
+
+//Inject Custom logger, this will also register the InMemoryLoggerProvider logger
+//hence, AddLogging should not be used here
+builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
+
+
 #endregion
 
-builder.Services.AddTransient<LifeTimeService>();
-//builder.Services.AddScoped<LifeTimeService>();
-//builder.Services.AddSingleton<LifeTimeService>();
 
-
-#if DEBUG
-    builder.Services.AddTransient<IGreeter, GoodMorning>();
-#else
-    builder.Services.AddTransient<IGreeter, GoodEvening>();
-#endif
-
+// Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(c =>
 {
@@ -79,6 +76,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+//Inject Custom logger, this will also register the InMemoryLoggerProvider logger
+//hence, AddLogging should not be used here
+builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
 
 var app = builder.Build();
 
