@@ -12,7 +12,7 @@ namespace DbModels;
 [Table("Friends", Schema = "supusr")]
 [Index(nameof(FirstName), nameof(LastName))]
 [Index(nameof(LastName), nameof(FirstName))]
-sealed public class FriendDbM : Friend, ISeed<FriendDbM>
+sealed public class FriendDbM : csFriend, ISeed<FriendDbM>
 {
     [Key]    
     public override Guid FriendId { get; set; }
