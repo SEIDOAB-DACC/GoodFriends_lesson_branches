@@ -1,4 +1,5 @@
-﻿using Configuration.Options;
+﻿using Configuration;
+using Configuration.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,9 @@ builder.Configuration.SetBasePath(Path.Combine(currentDir, "../AppWebApi"))
 builder.Services.Configure<AesEncryptionOptions>(
     options => builder.Configuration.GetSection(AesEncryptionOptions.Position).Bind(options));
 
+// Registering encryption service
+builder.Services.AddTransient<Encryptions>();
+
 builder.Services.Configure<JwtOptions>(
     options => builder.Configuration.GetSection(JwtOptions.Position).Bind(options));
 
@@ -40,9 +44,23 @@ builder.Services.Configure<JwtOptions>(
 builder.Services.Configure<DbConnectionSetsOptions>(
     options => builder.Configuration.GetSection(DbConnectionSetsOptions.Position).Bind(options));
 
-// adding version info
+// Registering database connections service
+builder.Services.AddSingleton<DatabaseConnections>();
+
+// adding verion info
 builder.Services.Configure<VersionOptions>(options =>VersionOptions.ReadFromAssembly(options));
 #endregion
+
+builder.Services.AddTransient<LifeTimeService>();
+//builder.Services.AddScoped<LifeTimeService>();
+//builder.Services.AddSingleton<LifeTimeService>();
+
+
+#if DEBUG
+    builder.Services.AddTransient<IGreeter, GoodMorning>();
+#else
+    builder.Services.AddTransient<IGreeter, GoodEvening>();
+#endif
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(c =>

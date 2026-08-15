@@ -15,6 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Configuration\Configuration.csproj" />
+    <ProjectReference Include="..\Configuration\Configuration.csproj"/>
   </ItemGroup>
 </Project>
