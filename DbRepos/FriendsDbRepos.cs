@@ -67,4 +67,118 @@ public class FriendsDbRepos
         };
         return ret;
     }
+
+    public async Task<ResponseItemDto<IFriend>> ReadFriendAsync(Guid id, bool flat)
+    {
+        IFriend item;
+        if (!flat)
+        {
+            //make sure the model is fully populated, try without include.
+            //remove tracking for all read operations for performance and to avoid recursion/circular access
+            var query = _dbContext.Friends.AsNoTracking()
+                .Include(i => i.AddressDbM)
+                .Include(i => i.PetsDbM)
+                .Include(i => i.QuotesDbM)
+                .Where(i => i.FriendId == id);
+
+            item = await query.FirstOrDefaultAsync<IFriend>();
+        }
+        else
+        {
+            //Not fully populated, compare the SQL Statements generated
+            //remove tracking for all read operations for performance and to avoid recursion/circular access
+            var query = _dbContext.Friends.AsNoTracking()
+                .Where(i => i.FriendId == id);
+
+            item = await query.FirstOrDefaultAsync<IFriend>();
+        }
+        
+        if (item == null) throw new ArgumentException($"Item {id} is not existing");
+        return new ResponseItemDto<IFriend>()
+        {
+#if DEBUG
+            ConnectionString = _dbContext.dbConnection,
+#endif
+            Item = item
+        };
+    }
+
+    public async Task<ResponseItemDto<IFriend>> UpdateFriendAsync(FriendCuDto itemDto)
+    {
+        //Find the instance with matching id and read the navigation properties.
+        var query1 = _dbContext.Friends
+            .Where(i => i.FriendId == itemDto.FriendId);
+        var item = await query1
+            .Include(i => i.AddressDbM)
+            .Include(i => i.PetsDbM)
+            .Include(i => i.QuotesDbM)
+            .FirstOrDefaultAsync<FriendDbM>();
+
+        //If the item does not exists
+        if (item == null) throw new ArgumentException($"Item {itemDto.FriendId} is not existing");
+
+        //update the properties 
+        item.UpdateFromDTO(itemDto);
+
+        await navProp_FriendCUdto_to_FriendDbM(itemDto, item);
+
+        //write to database model
+        _dbContext.Friends.Update(item);
+
+        //write to database in a UoW
+        await _dbContext.SaveChangesAsync();
+
+        return await ReadFriendAsync(item.FriendId, false);
+    }
+
+    private async Task navProp_FriendCUdto_to_FriendDbM(FriendCuDto itemDtoSrc, FriendDbM itemDst)
+    {
+        //update AddressDbM from itemDto.AddressId
+        itemDst.AddressDbM = (itemDtoSrc.AddressId != null) ? await _dbContext.Addresses.FirstOrDefaultAsync(
+            a => (a.AddressId == itemDtoSrc.AddressId)) : null;
+
+        //identical with above, just to show another way of doing it
+        if (itemDtoSrc.AddressId != null)
+        {
+            itemDst.AddressDbM = await _dbContext.Addresses.FirstOrDefaultAsync(
+            a => (a.AddressId == itemDtoSrc.AddressId));
+        }
+
+        else
+        {
+            itemDst.AddressDbM = null;
+        }
+
+                    //update PetsDbM from itemDto.PetsId list
+            List<PetDbM> pets = null;
+        if (itemDtoSrc.PetsId != null)
+        {
+            pets = new List<PetDbM>();
+            foreach (var id in itemDtoSrc.PetsId)
+            {
+                var p = await _dbContext.Pets.FirstOrDefaultAsync(i => i.PetId == id);
+                if (p == null)
+                    throw new ArgumentException($"Item id {id} not existing");
+
+                pets.Add(p);
+            }
+        }
+        itemDst.PetsDbM = pets;
+        
+        //update QuotesDbM from itemDto.QuotesId
+        List<QuoteDbM> quotes = null;
+        if (itemDtoSrc.QuotesId != null)
+        {
+            quotes = new List<QuoteDbM>();
+            foreach (var id in itemDtoSrc.QuotesId)
+            {
+                var q = await _dbContext.Quotes.FirstOrDefaultAsync(i => i.QuoteId == id);
+                if (q == null)
+                    throw new ArgumentException($"Item id {id} not existing");
+
+                quotes.Add(q);
+            }
+        }
+        itemDst.QuotesDbM = quotes;
+    }
 }

@@ -12,11 +12,11 @@ namespace DbModels;
 [Table("Friends", Schema = "supusr")]
 [Index(nameof(FirstName), nameof(LastName))]
 [Index(nameof(LastName), nameof(FirstName))]
-sealed public class FriendDbM : csFriend, ISeed<FriendDbM>
+sealed public class FriendDbM : Friend, ISeed<FriendDbM>
 {
-    [Key]    
+    [Key]
     public override Guid FriendId { get; set; }
-    
+
     [Required]
     public override string FirstName { get; set; }
 
@@ -35,12 +35,12 @@ sealed public class FriendDbM : csFriend, ISeed<FriendDbM>
     [JsonIgnore]
     public List<PetDbM> PetsDbM { get; set; } = null;
 
-    [NotMapped] 
+    [NotMapped]
     public override List<IQuote> Quotes { get => QuotesDbM?.ToList<IQuote>(); set => new NotImplementedException(); }
     [JsonIgnore]
     public List<QuoteDbM> QuotesDbM { get; set; } = null;
 
-    [NotMapped] 
+    [NotMapped]
     public override List<ICreditCard> CreditCards { get => CreditCardsDbM?.ToList<ICreditCard>(); set => new NotImplementedException(); }
 
     [JsonIgnore]
@@ -58,6 +58,18 @@ sealed public class FriendDbM : csFriend, ISeed<FriendDbM>
 
     #region constructors
     public FriendDbM() { }
+    #endregion
+    
+        #region Update from DTO
+    public FriendDbM UpdateFromDTO(FriendCuDto org)
+    {
+        FirstName = org.FirstName;
+        LastName = org.LastName;
+        Birthday = org.Birthday;
+        Email = org.Email;
+
+        return this;
+    }
     #endregion
 }
 
