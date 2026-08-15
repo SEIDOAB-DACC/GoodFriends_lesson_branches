@@ -16,6 +16,13 @@ public class AdminDbRepos
     private Encryptions _encryptions;
     private readonly MainDbContext _dbContext;
 
+    public AdminDbRepos(ILogger<AdminDbRepos> logger, Encryptions encryptions, MainDbContext context)
+    {
+        _logger = logger;
+        _encryptions = encryptions;
+        _dbContext = context;
+    }
+
     public async Task SeedAsync(int nrItems)
     {
         //Create a seeder
@@ -31,12 +38,5 @@ public class AdminDbRepos
 
         //Save changes to the database
         await _dbContext.SaveChangesAsync();
-    }
-
-    public AdminDbRepos(ILogger<AdminDbRepos> logger, Encryptions encryptions, MainDbContext context)
-    {
-        _logger = logger;
-        _encryptions = encryptions;
-        _dbContext = context;
     }
 }

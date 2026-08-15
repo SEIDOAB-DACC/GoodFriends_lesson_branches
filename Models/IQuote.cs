@@ -6,6 +6,8 @@ public interface IQuote
 
     public string QuoteText { get; set; }
     public string Author { get; set; }
+
+    public List<IFriend> Friends { get; set; }
 }
 
 

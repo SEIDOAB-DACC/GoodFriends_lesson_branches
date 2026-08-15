@@ -1,76 +1,68 @@
-# Explanation of `Configuration/Extensions` and `DbContext/Extensions`
+# Explanation of DbContext, DbModels, and DbRepos Projects
 
-This document explains the purpose and structure of the files and classes found in the `Configuration/Extensions` and `DbContext/Extensions` folders. It also describes how these extension methods simplify application setup in `Program.cs` by encapsulating configuration and service registration logic.
+## 1. DbContext Project
 
----
+**Purpose:**
+- The `DbContext` project contains the Entity Framework Core context class (`MainDbContext`).
+- It manages the database connection, tracks changes, and coordinates CRUD operations between the application and the database.
+- It is responsible for configuring the database schema, relationships, and migrations.
 
-## 1. `Configuration/Extensions`
+**Content:**
+- `MainDbContext.cs`: Defines the DbContext class, DbSet properties for each entity, and configuration logic.
+- Migrations folder: Contains EF Core migration files for schema changes.
+- Project references: Typically references `DbModels` for entity definitions.
 
-This folder contains static extension classes that encapsulate common configuration and service registration patterns. Each class provides methods that extend `IServiceCollection` or `IConfigurationBuilder`, allowing for clean, modular, and reusable setup code in `Program.cs`.
-
-### Main Classes:
-
-- **DatabaseExtensions**
-  - Adds and configures database connection options and services.
-  - Example method: `AddDatabaseConnections(IServiceCollection, IConfiguration)`
-- **EncryptionExtensions**
-  - Registers encryption-related options and services.
-  - Example method: `AddEncryptions(IServiceCollection, IConfiguration)`
-- **LoggerExtensions**
-  - Adds a custom in-memory logger provider.
-  - Example method: `AddInMemoryLogger(IServiceCollection)`
-- **SecretsExtensions**
-  - Configures secret storage, supporting both user secrets and Azure Key Vault, based on environment and configuration.
-  - Example method: `AddSecrets(IConfigurationBuilder, IHostEnvironment, string)`
-- **VersionExtensions**
-  - Registers version information from assembly metadata.
-  - Example method: `AddVersionInfo(IServiceCollection)`
-
-#### **How it simplifies `Program.cs`**
-Instead of cluttering `Program.cs` with detailed configuration and service registration logic, you can simply call these extension methods. This keeps the startup code clean and focused on high-level application flow.
-
-**Example usage in `Program.cs`:**
-```csharp
-builder.Services
-    .AddDatabaseConnections(builder.Configuration)
-    .AddEncryptions(builder.Configuration)
-    .AddInMemoryLogger()
-    .AddVersionInfo();
-```
+**Relationship to Other Projects:**
+- Depends on `DbModels` for entity classes.
+- Used by repositories and services to access and manipulate data.
 
 ---
 
-## 2. `DbContext/Extensions`
+## 2. DbModels Project
 
-This folder contains extension classes for configuring Entity Framework Core `DbContext` services, both at runtime and design-time (for migrations).
+**Purpose:**
+- The `DbModels` project defines the data model classes (entities) that represent tables in the database.
+- These classes are plain C# objects (POCOs) with properties mapping to database columns.
 
-### Main Classes:
+**Content:**
+- Entity classes such as `FriendDbM`, `AddressDbM`, `PetDbM`, `QuoteDbM`.
+- Each class typically includes properties for columns and may include navigation properties for relationships.
 
-- **DbContextExtensions**
-  - Registers the application's main `DbContext` with dependency injection, using connection details from configuration and supporting multiple database providers (SQL Server, MySQL, PostgreSQL).
-  - Example method: `AddUserBasedDbContext(IServiceCollection)`
-- **DbContextDesignTimeExtensions**
-  - Provides helpers for configuring the `DbContext` at design-time (e.g., for EF Core migrations), including reading secrets and connection info as in the main app.
-  - Example method: `ConfigureForDesignTime(DbContextOptionsBuilder, Func<DbContextOptionsBuilder, string, DbContextOptionsBuilder>)`
+**Relationship to Other Projects:**
+- Referenced by `DbContext` to define the schema.
+- Used by `DbRepos` for data access and by services for business logic.
 
-#### **How it simplifies `Program.cs` and migrations**
-- Keeps all `DbContext` setup logic in one place, making it easy to switch database providers or update connection logic.
-- Ensures that both runtime and design-time (migrations) use consistent configuration patterns.
-
-**Example usage in `Program.cs`:**
-```csharp
-builder.Services.AddUserBasedDbContext();
-```
+**Note on Navigation Properties:**
+- Navigation properties in `DbModels` are in this branch marked with `[NotMapped]`.
+- **Reason:** In this architecture the DbModels inherit from Models, and as we want loosely coupled objects, Models define the relationship to other models using interfaces. Interfaces cannot be instatiated, so we need to modify the relationships in DbModels so EFC can instantiate. We will do this in the next branch. In this branch, we simply tell EFC not to implement the relationship.
 
 ---
 
-## **Benefits of Using Extension Methods for Application Building**
-- **Separation of Concerns:** Keeps configuration and registration logic out of `Program.cs`.
-- **Reusability:** Extension methods can be reused across multiple projects or services.
-- **Maintainability:** Changes to configuration logic are isolated to extension classes.
-- **Readability:** `Program.cs` remains concise and easy to understand.
+## 3. DbRepos Project
+
+**Purpose:**
+- The `DbRepos` project implements repository classes for data access logic.
+- Repositories encapsulate CRUD operations and queries for each entity.
+- They provide an abstraction layer between the database and the business logic/services.
+
+**Content:**
+- Repository classes such as `FriendsDbRepos`, `AddressesDbRepos`, etc.
+- Each repository uses the `DbContext` to perform operations on the database.
+
+**Relationship to Other Projects:**
+- Depends on `DbContext` for database access.
+- Uses `DbModels` for entity types.
+- Called by service layer (in `Services` project) to perform data operations.
 
 ---
 
-**In summary:**
-The use of extension methods in `Configuration/Extensions` and `DbContext/Extensions` enables a modular, maintainable, and scalable approach to configuring services and application components, simplifying the application startup process.
+## Summary of Relationships
+- `DbModels` defines the entities.
+- `DbContext` uses `DbModels` to define the schema and manage the database.
+- `DbRepos` uses both `DbContext` and `DbModels` to implement data access logic.
+- Other projects (like `Services` and `AppWebApi`) use `DbRepos` to interact with the data layer.
+
+---
+
+## Why Navigation Properties in DbModels are `[NotMapped]`
+- Marking navigation properties as `[NotMapped]` tells Entity Framework not to create foreign key relationships or join tables for these properties. We will create the relationships in the next branch.

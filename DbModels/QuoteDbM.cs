@@ -12,6 +12,11 @@ sealed public class QuoteDbM : Quote, IEquatable<QuoteDbM>
     [Key]
     public override Guid QuoteId { get; set; }
 
+    #region removing Model relationships from the database (entity) Model as they are using interfaces
+    [NotMapped]
+    public override List<IFriend> Friends { get; set; }
+    #endregion
+
     #region constructors
     public QuoteDbM() : base() { }
     public QuoteDbM(SeededQuote goodQuote) : base(goodQuote) { }

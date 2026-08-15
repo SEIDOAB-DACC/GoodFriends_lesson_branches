@@ -55,8 +55,16 @@ builder.Services.AddInMemoryLogger();
 
 //Inject DbRepos and Services
 builder.Services.AddScoped<AdminDbRepos>();
+builder.Services.AddScoped<FriendsDbRepos>();
+builder.Services.AddScoped<AddressesDbRepos>();
+builder.Services.AddScoped<PetsDbRepos>();
+builder.Services.AddScoped<QuotesDbRepos>();
 
 builder.Services.AddScoped<IAdminService, AdminServiceDb>();
+builder.Services.AddScoped<IFriendsService, FriendsServiceDb>();
+builder.Services.AddScoped<IAddressesService, AddressesServiceDb>();
+builder.Services.AddScoped<IPetsService, PetsServiceDb>();
+builder.Services.AddScoped<IQuotesService, QuotesServiceDb>();
 
 var app = builder.Build();
 

@@ -22,6 +22,72 @@ namespace DbContext.Migrations.mysqlDbContext
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("DbModels.AddressDbM", b =>
+                {
+                    b.Property<Guid>("AddressId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("City")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("StreetAddress")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("ZipCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("AddressId");
+
+                    b.ToTable("Addresses");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.Property<Guid>("FriendId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("Birthday")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("FriendId");
+
+                    b.ToTable("Friends");
+                });
+
+            modelBuilder.Entity("DbModels.PetDbM", b =>
+                {
+                    b.Property<Guid>("PetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mood")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("PetId");
+
+                    b.ToTable("Pets");
+                });
+
             modelBuilder.Entity("DbModels.QuoteDbM", b =>
                 {
                     b.Property<Guid>("QuoteId")

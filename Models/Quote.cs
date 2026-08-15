@@ -8,6 +8,11 @@ public class Quote : IQuote, IEquatable<Quote>
     public virtual string QuoteText { get; set; }
     public virtual string Author { get; set; }
 
+    // Model relationships
+    // One Quote may have many friends
+    public virtual List<IFriend> Friends { get; set; } = null;
+
+
     #region constructors
     public Quote() { }
 
@@ -17,6 +22,7 @@ public class Quote : IQuote, IEquatable<Quote>
         QuoteText = goodQuote.Quote;
         Author = goodQuote.Author;
     }
+
     #endregion
 
     #region implementing IEquatable

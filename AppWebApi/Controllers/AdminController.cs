@@ -62,12 +62,13 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
         //GET: api/admin/seed?count={count}
         [HttpGet()]
         [ActionName("Seed")]
         [ProducesResponseType(200, Type = typeof(string))]
         [ProducesResponseType(400, Type = typeof(string))]
-       public async Task<IActionResult> Seed(int nrItems = 10)
+        public async Task<IActionResult> Seed(int nrItems = 10)
         {
             try
             {
