@@ -63,6 +63,18 @@ public static class SecretsExtensions
                 Console.WriteLine("Using User Secrets in Development environment.");
 
             }
+            else if (secretStorage == "AzureKeyVault")
+            {
+                // In development, but we want to use Azure Key Vault
+                // Azure Key Vault access parameters are read from user secrets
+                Console.WriteLine("Using Azure Key Vault in Development environment.");
+
+                // Show some environment variables to access Azure Key Vault 
+                AzureKeyVaultExtensions.PrepareDevelopmentAccess(tempConfig);
+                config.AddAzureKeyVault();
+
+                Console.WriteLine($"Azure Key Vault added successfully.");
+            }
             else
             {
                 throw new InvalidOperationException("Invalid SecretStorage value. Use 'UserSecrets' or 'AzureKeyVault'.");
@@ -70,7 +82,18 @@ public static class SecretsExtensions
         }
         else
         {
-            throw new InvalidOperationException("Invalid SecretStorage value. 'AzureKeyVault' for production is not implemented.");
+            // In production never use user secrets, only Azure Key Vault
+            if (secretStorage == "AzureKeyVault")
+            {
+                Console.WriteLine("Using Azure Key Vault in Production environment.");
+
+                config.AddAzureKeyVault();
+                Console.WriteLine($"Azure Key Vault added successfully.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid SecretStorage value. Use 'AzureKeyVault' for production.");
+            }
         }
 
         return config;

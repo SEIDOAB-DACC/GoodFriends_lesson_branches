@@ -40,41 +40,41 @@ Windows WM side
 ----
 
 Ensure you can reach macOS, in terminal
-    ping 192.168.68.51
+    ping 192.168.68.53
 
 Login to macOS remote using ssh
-    ssh martin@192.168.68.51
+    ssh martin@192.168.68.53
 
 To avoid giving password each time, connect with a ssh key, 
 Generate a key, in terminal (The command is waiting for your password)
     ssh-keygen -t rsa -b 4096 -f $env:USERPROFILE\.ssh\id_rsa
     
 Copy the public key to your macOS host
-    type $env:USERPROFILE\.ssh\id_rsa.pub | ssh martin@192.168.68.51 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+    type $env:USERPROFILE\.ssh\id_rsa.pub | ssh martin@192.168.68.53 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 
 Verify ssh key based connection by executin a command, in terminal
-    ssh martin@192.168.68.51 "echo 'SSH key authentication test'"
+    ssh martin@192.168.68.53 "echo 'SSH key authentication test'"
 
 See the docker processes running
-    ssh martin@192.168.68.51 "/usr/local/bin/docker ps"
+    ssh martin@192.168.68.53 "/usr/local/bin/docker ps"
 
 
 Execute a azure cli command
 -----
 azure version
-    ssh martin@192.168.68.51 "/usr/local/bin/docker exec azure-cli az --version"
+    ssh martin@192.168.68.53 "/usr/local/bin/docker exec azure-cli az --version"
 
 azure login
-    ssh martin@192.168.68.51 "/usr/local/bin/docker exec azure-cli az login"
+    ssh martin@192.168.68.53 "/usr/local/bin/docker exec azure-cli az login"
 
 azure List subscriptions
-    ssh martin@192.168.68.51 "/usr/local/bin/docker exec azure-cli az account list"
+    ssh martin@192.168.68.53 "/usr/local/bin/docker exec azure-cli az account list"
 
 azure List resource groups
-    ssh martin@192.168.68.51 "/usr/local/bin/docker exec azure-cli az group list"
+    ssh martin@192.168.68.53 "/usr/local/bin/docker exec azure-cli az group list"
 
 
 Connect to Database containers
 -----
 To connect to docker containers running databases, use the IP address of the host machine. 
-In above with Parallels (bridged network) instead of "localhost" use "192.168.68.51"
+In above with Parallels (bridged network) instead of "localhost" use "192.168.68.53"

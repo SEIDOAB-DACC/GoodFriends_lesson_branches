@@ -1,16 +1,17 @@
 To create the AppWebApi
 
 1. Create the database. With Terminal in folder _scripts 
-   
+   E.g. database name: sql-friends, database type: sqlserver, server: docker, default user: dbo, application: ../AppWebApi
+
    macOs
-   ./database-rebuild-all.sh sql-friends sqlserver docker root ../AppWebApi
-   ./database-rebuild-all.sh sql-friends mysql docker root ../AppWebApi
-   ./database-rebuild-all.sh sql-friends postgresql docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-friends sqlserver docker dbo ../AppWebApi
+   ./database-rebuild-all.sh sql-friends mysql docker dbo ../AppWebApi
+   ./database-rebuild-all.sh sql-friends postgresql docker dbo ../AppWebApi
    
    Windows
-   .\database-rebuild-all.ps1 sql-friends sqlserver docker root ..\AppWebApi
-   ./database-rebuild-all.ps1 sql-friends mysql docker root ..\AppWebApi
-   ./database-rebuild-all.ps1 sql-friends postgresql docker root ..\AppWebApi
+   .\database-rebuild-all.ps1 sql-friends sqlserver docker dbo ..\AppWebApi
+   ./database-rebuild-all.ps1 sql-friends mysql docker dbo ..\AppWebApi
+   ./database-rebuild-all.ps1 sql-friends postgresql docker dbo ..\AppWebApi
 
    Ensure no errors from build, migration or database update
 
@@ -18,7 +19,7 @@ To create the AppWebApi
 2. From Azure Data Studio you can now connect to the database
    Use connection string from user secrets:
    connection string corresponding to Tag
-   "sql-friends.<db_type>.docker.root"
+   "sql-friends.<db_type>.docker.dbo"
 
 3. Use Azure Data Studio to execute SQL script DbContext/SqlScripts/<db_type>/azure/initDatabase.sql
 
