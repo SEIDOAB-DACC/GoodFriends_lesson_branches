@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbContext.Migrations.PostgresDbContext
 {
     [DbContext(typeof(MainDbContext.PostgresDbContext))]
-    [Migration("20260731174728_miInitial")]
+    [Migration("20260731175443_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -54,6 +54,9 @@ namespace DbContext.Migrations.PostgresDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AddressDbMAddressId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("Birthday")
                         .HasColumnType("timestamp with time zone");
 
@@ -68,6 +71,8 @@ namespace DbContext.Migrations.PostgresDbContext
 
                     b.HasKey("FriendId");
 
+                    b.HasIndex("AddressDbMAddressId");
+
                     b.ToTable("Friends");
                 });
 
@@ -75,6 +80,9 @@ namespace DbContext.Migrations.PostgresDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("FriendDbMFriendId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Kind")
@@ -87,6 +95,8 @@ namespace DbContext.Migrations.PostgresDbContext
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
+
+                    b.HasIndex("FriendDbMFriendId");
 
                     b.ToTable("Pets");
                 });
@@ -106,6 +116,64 @@ namespace DbContext.Migrations.PostgresDbContext
                     b.HasKey("QuoteId");
 
                     b.ToTable("Quotes");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.Property<Guid>("FriendsDbMFriendId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("QuotesDbMQuoteId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
+
+                    b.HasIndex("QuotesDbMQuoteId");
+
+                    b.ToTable("FriendDbMQuoteDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.HasOne("DbModels.AddressDbM", "AddressDbM")
+                        .WithMany("FriendsDbM")
+                        .HasForeignKey("AddressDbMAddressId");
+
+                    b.Navigation("AddressDbM");
+                });
+
+            modelBuilder.Entity("DbModels.PetDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "FriendDbM")
+                        .WithMany("PetsDbM")
+                        .HasForeignKey("FriendDbMFriendId");
+
+                    b.Navigation("FriendDbM");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", null)
+                        .WithMany()
+                        .HasForeignKey("FriendsDbMFriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DbModels.QuoteDbM", null)
+                        .WithMany()
+                        .HasForeignKey("QuotesDbMQuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DbModels.AddressDbM", b =>
+                {
+                    b.Navigation("FriendsDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618
         }

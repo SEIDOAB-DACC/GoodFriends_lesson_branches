@@ -15,16 +15,24 @@ sealed public class FriendDbM : Friend
     
     public override string FirstName { get; set; }
 
-
-    #region removing Model relationships from the database (entity) Model as they are using interfaces
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [NotMapped]
-    public override IAddress Address { get; set; }
+    public override IAddress Address { get => AddressDbM; set => new NotImplementedException(); }
     
-    [NotMapped]
-    public override List<IPet> Pets { get; set; }
+    [JsonIgnore]
+    public AddressDbM AddressDbM { get; set; } = null;
 
     [NotMapped]
-    public override List<IQuote> Quotes { get; set; }
+    public override List<IPet> Pets { get => PetsDbM?.ToList<IPet>(); set => new NotImplementedException(); }
+
+    [JsonIgnore]
+    public List<PetDbM> PetsDbM { get; set; } = null;
+
+    [NotMapped] 
+    public override List<IQuote> Quotes { get => QuotesDbM?.ToList<IQuote>(); set => new NotImplementedException(); }
+
+    [JsonIgnore]
+    public List<QuoteDbM> QuotesDbM { get; set; } = null;
     #endregion
 
     #region constructors

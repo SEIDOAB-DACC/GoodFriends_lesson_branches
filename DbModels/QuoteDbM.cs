@@ -12,9 +12,12 @@ sealed public class QuoteDbM : Quote, IEquatable<QuoteDbM>
     [Key]
     public override Guid QuoteId { get; set; }
 
-    #region removing Model relationships from the database (entity) Model as they are using interfaces
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [NotMapped]
-    public override List<IFriend> Friends { get; set; }
+    public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
+
+    [JsonIgnore]
+    public List<FriendDbM> FriendsDbM { get; set; } = null;
     #endregion
 
     #region constructors

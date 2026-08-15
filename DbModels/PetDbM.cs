@@ -6,7 +6,6 @@ using Seido.Utilities.SeedGenerator;
 using Models;
 
 namespace DbModels;
-
 sealed public class PetDbM : Pet
 {
     [Key]    
@@ -14,10 +13,12 @@ sealed public class PetDbM : Pet
 
     public override string Name { get; set; }
     
-    #region removing Model relationships from the database (entity) Model as they are using interfaces
-
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
+    [JsonIgnore]
+    public  FriendDbM FriendDbM { get; set; } = null;         
+    
     [NotMapped]
-    public override IFriend Friend { get; set; }        
+    public override IFriend Friend { get => FriendDbM; set => new NotImplementedException(); }        
     #endregion
 
 

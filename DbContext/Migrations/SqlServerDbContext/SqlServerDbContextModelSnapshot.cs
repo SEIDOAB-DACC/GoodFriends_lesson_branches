@@ -17,7 +17,7 @@ namespace DbContext.Migrations.SqlServerDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -51,6 +51,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AddressDbMAddressId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("Birthday")
                         .HasColumnType("datetime2");
 
@@ -65,6 +68,8 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("FriendId");
 
+                    b.HasIndex("AddressDbMAddressId");
+
                     b.ToTable("Friends");
                 });
 
@@ -72,6 +77,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FriendDbMFriendId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Kind")
@@ -84,6 +92,8 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
+
+                    b.HasIndex("FriendDbMFriendId");
 
                     b.ToTable("Pets");
                 });
@@ -103,6 +113,64 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.HasKey("QuoteId");
 
                     b.ToTable("Quotes");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.Property<Guid>("FriendsDbMFriendId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuotesDbMQuoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
+
+                    b.HasIndex("QuotesDbMQuoteId");
+
+                    b.ToTable("FriendDbMQuoteDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.HasOne("DbModels.AddressDbM", "AddressDbM")
+                        .WithMany("FriendsDbM")
+                        .HasForeignKey("AddressDbMAddressId");
+
+                    b.Navigation("AddressDbM");
+                });
+
+            modelBuilder.Entity("DbModels.PetDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "FriendDbM")
+                        .WithMany("PetsDbM")
+                        .HasForeignKey("FriendDbMFriendId");
+
+                    b.Navigation("FriendDbM");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", null)
+                        .WithMany()
+                        .HasForeignKey("FriendsDbMFriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DbModels.QuoteDbM", null)
+                        .WithMany()
+                        .HasForeignKey("QuotesDbMQuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DbModels.AddressDbM", b =>
+                {
+                    b.Navigation("FriendsDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618
         }

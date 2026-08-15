@@ -17,7 +17,7 @@ namespace DbContext.Migrations.mysqlDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "9.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -51,6 +51,9 @@ namespace DbContext.Migrations.mysqlDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("AddressId")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTime?>("Birthday")
                         .HasColumnType("datetime(6)");
 
@@ -65,6 +68,8 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("FriendId");
 
+                    b.HasIndex("AddressId");
+
                     b.ToTable("Friends");
                 });
 
@@ -72,6 +77,9 @@ namespace DbContext.Migrations.mysqlDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("FriendId")
                         .HasColumnType("char(36)");
 
                     b.Property<int>("Kind")
@@ -85,7 +93,9 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("PetId");
 
-                    b.ToTable("Pets");
+                    b.HasIndex("FriendId");
+
+                    b.ToTable("Pets", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.QuoteDbM", b =>
@@ -103,6 +113,66 @@ namespace DbContext.Migrations.mysqlDbContext
                     b.HasKey("QuoteId");
 
                     b.ToTable("Quotes");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.Property<Guid>("FriendsDbMFriendId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("QuotesDbMQuoteId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
+
+                    b.HasIndex("QuotesDbMQuoteId");
+
+                    b.ToTable("FriendDbMQuoteDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.HasOne("DbModels.AddressDbM", "AddressDbM")
+                        .WithMany("FriendsDbM")
+                        .HasForeignKey("AddressId");
+
+                    b.Navigation("AddressDbM");
+                });
+
+            modelBuilder.Entity("DbModels.PetDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "FriendDbM")
+                        .WithMany("PetsDbM")
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FriendDbM");
+                });
+
+            modelBuilder.Entity("FriendDbMQuoteDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", null)
+                        .WithMany()
+                        .HasForeignKey("FriendsDbMFriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DbModels.QuoteDbM", null)
+                        .WithMany()
+                        .HasForeignKey("QuotesDbMQuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DbModels.AddressDbM", b =>
+                {
+                    b.Navigation("FriendsDbM");
+                });
+
+            modelBuilder.Entity("DbModels.FriendDbM", b =>
+                {
+                    b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618
         }

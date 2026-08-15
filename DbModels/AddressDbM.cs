@@ -26,9 +26,12 @@ sealed public class AddressDbM : Address, IEquatable<AddressDbM>
     public override int GetHashCode() => (StreetAddress, ZipCode, City, Country).GetHashCode();
     #endregion
 
-    #region removing Model relationships from the database (entity) Model as they are using interfaces
-    [NotMapped] //removed from EFC 
-    public override List<IFriend> Friends { get; set; }
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
+    [NotMapped] 
+    public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
+
+    [JsonIgnore]
+    public List<FriendDbM> FriendsDbM { get; set; } = null;
     #endregion
 
     #region constructors
