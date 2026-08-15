@@ -78,6 +78,7 @@ builder.Services.AddSwaggerGen(c =>
 
 //Inject Services
 builder.Services.AddScoped<IAdminService, AdminServiceDb>();
+builder.Services.AddSingleton<ICustomerService, CustomerService>();
 
 var app = builder.Build();
 
