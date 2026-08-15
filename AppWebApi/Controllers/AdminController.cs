@@ -17,15 +17,10 @@ namespace AppWebApi.Controllers
     [Route("api/[controller]/[action]")]   
     public class AdminController : Controller
     {
-        readonly ILogger<AdminController> _logger;
-        private readonly DbConnectionSetsOptions _dbSetOptions;
-        readonly AesEncryptionOptions _aesOptions;
-        readonly JwtOptions _jwtOptions;
-        readonly VersionOptions _versionOptions;
-        readonly IConfiguration _configuration;
-        readonly Encryptions _encryptions = null;
-        readonly DatabaseConnections _dbConnections = null;
+        readonly DatabaseConnections _dbConnections;
         readonly IAdminService _service;
+        readonly ILogger<AdminController> _logger;
+        readonly VersionOptions _versionOptions;
 
         //GET: api/admin/environment
         [HttpGet()]
@@ -45,25 +40,9 @@ namespace AppWebApi.Controllers
                 _logger.LogError($"{nameof(Environment)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
-        
-        //GET: api/admin/version
-        [HttpGet()]
-        [ActionName("Version")]
-        [ProducesResponseType(typeof(VersionOptions), 200)]
-        public IActionResult Version()
-        {
-            try
-            {
-                return Ok(_versionOptions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving version information");
-                return BadRequest(ex.Message);
-            }
-        }
+         }
 
+#if DEBUG
         //GET: api/admin/seed?count={count}
         [HttpGet()]
         [ActionName("Seed")]
@@ -108,6 +87,46 @@ namespace AppWebApi.Controllers
             }
         }
 
+        //You need to run this with dbo connection string but not logged in
+        [HttpGet()]
+        [ActionName("SeedUsers")]
+        [ProducesResponseType(200, Type = typeof(UsrInfoDto))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> SeedUsers(string countUsr = "32", string countSupUsr = "2", string countDbOwners = "1")
+        {
+            try
+            {
+                int _countUsr = int.Parse(countUsr);
+                int _countSupUsr = int.Parse(countSupUsr);
+                int _countDbOwners = int.Parse(countDbOwners);
+
+                _logger.LogInformation($"{nameof(SeedUsers)}: {nameof(_countUsr)}: {_countUsr}, {nameof(_countSupUsr)}: {_countSupUsr}, {nameof(_countDbOwners)}: {_countDbOwners}");
+
+                var _info = await _service.SeedUsersAsync(_countUsr, _countSupUsr, _countDbOwners);
+                return Ok(_info);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);  
+            }       
+        }
+#endif
+        [HttpGet()]
+        [ActionName("Version")]
+        [ProducesResponseType(typeof(VersionOptions), 200)]
+        public IActionResult Version()
+        {
+            try
+            {
+                _logger.LogInformation($"{nameof(Version)}:\n{JsonConvert.SerializeObject(_versionOptions)}");
+                return Ok(_versionOptions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving version information");
+                return BadRequest(ex.Message);
+            }
+        }
         //GET: api/admin/log
         [HttpGet()]
         [ActionName("Log")]
@@ -122,28 +141,13 @@ namespace AppWebApi.Controllers
             return Ok("No messages in log");
         }
 
-        public AdminController(ILogger<AdminController> logger,
-                    IConfiguration configuration,
-                    IOptions<DbConnectionSetsOptions> dbSetOptions,
-                    IOptions<AesEncryptionOptions> aesOptions,
-                    IOptions<JwtOptions> jwtOptions,
-                    IOptions<VersionOptions> versionOptions,
-                    Encryptions encryptions, DatabaseConnections dbConnections,
-                    IAdminService service)
+        public AdminController(IAdminService service, ILogger<AdminController> logger,
+                DatabaseConnections dbConnections, IOptions<VersionOptions> versionOptions)
         {
-            _logger = logger;
-
-            _dbSetOptions = dbSetOptions.Value;
-            _aesOptions = aesOptions.Value;
-            _jwtOptions = jwtOptions.Value;
-            _versionOptions = versionOptions.Value;
-            _configuration = configuration;
-
-            _encryptions = encryptions;
-            _dbConnections = dbConnections;
-
             _service = service;
-
+            _logger = logger;
+            _dbConnections = dbConnections;
+            _versionOptions = versionOptions.Value;
         }
     }
 }

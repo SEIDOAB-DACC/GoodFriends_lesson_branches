@@ -15,10 +15,10 @@ namespace DbModels;
 sealed public class FriendDbM : csFriend, ISeed<FriendDbM>
 {
     [Key]    
-    public override Guid FriendId  { get; set; }
+    public override Guid FriendId { get; set; }
     
     [Required]
-    public override string FirstName  { get; set; }
+    public override string FirstName { get; set; }
 
     [JsonIgnore]
     public Guid? AddressId { get; set; }

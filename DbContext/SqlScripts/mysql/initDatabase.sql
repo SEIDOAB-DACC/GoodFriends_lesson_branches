@@ -58,4 +58,87 @@ BEGIN
     SELECT * FROM gstusr_vwInfoDb;
 END$$
 
+/* Create Login procedure with supUser privilages */
+CREATE OR REPLACE DEFINER='dbo'@'%' PROCEDURE gstusr_spLogin(
+    IN UserNameOrEmail VARCHAR(100),
+    IN UserPassword VARCHAR(200),
+    OUT UserId CHAR(36),
+    OUT UserName VARCHAR(100),
+    OUT UserRole VARCHAR(100)
+)
+BEGIN
+    SET UserId = NULL;
+    SET UserName = NULL;
+    SET UserRole = NULL;
+
+    SELECT u.UserId, u.UserName, u.UserRole INTO UserId, UserName, UserRole
+    FROM `sql-friends`.dbo_Users u
+    WHERE (u.UserName = UserNameOrEmail OR (u.Email IS NOT NULL AND u.Email = UserNameOrEmail))
+      AND u.Password = UserPassword
+    LIMIT 1;
+
+    IF UserId IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Login error: wrong user or password';
+    END IF;
+END$$
+
 DELIMITER ;
+
+/* User and role management in MariaDB */
+/* Create users and logins if they do not exist */
+CREATE USER IF NOT EXISTS 'gstusr'@'%' IDENTIFIED BY 'pa$Word1';
+CREATE USER IF NOT EXISTS 'usr'@'%' IDENTIFIED BY 'pa$Word1';
+CREATE USER IF NOT EXISTS 'supusr'@'%' IDENTIFIED BY 'pa$Word1';
+CREATE USER IF NOT EXISTS 'dbo'@'%' IDENTIFIED BY 'pa$Word1';
+
+/* Grant database access privileges */
+GRANT USAGE ON `sql-friends`.* TO 'gstusr'@'%';
+GRANT USAGE ON `sql-friends`.* TO 'usr'@'%';
+GRANT USAGE ON `sql-friends`.* TO 'supusr'@'%';
+GRANT ALL PRIVILEGES ON `sql-friends`.* TO 'dbo'@'%';
+
+/* Create roles */
+CREATE ROLE IF NOT EXISTS 'gstUsrRole';
+CREATE ROLE IF NOT EXISTS 'usrRole';
+CREATE ROLE IF NOT EXISTS 'supUsrRole';
+CREATE ROLE IF NOT EXISTS 'dboRole';
+
+/* Grant role privileges (adjust as needed) */
+GRANT SELECT ON `sql-friends`.`gstusr_vwInfoDb` TO 'gstUsrRole';
+GRANT SELECT ON `sql-friends`.`gstusr_vwInfoFriends` TO 'gstUsrRole';
+GRANT SELECT ON `sql-friends`.`gstusr_vwInfoPets` TO 'gstUsrRole';
+GRANT SELECT ON `sql-friends`.`gstusr_vwInfoQuotes` TO 'gstUsrRole';
+GRANT EXECUTE ON PROCEDURE `sql-friends`.`gstusr_spLogin` TO 'gstUsrRole';
+
+GRANT 'gstUsrRole' TO 'usrRole'; /* usr is also a gstusr */
+GRANT SELECT, UPDATE, INSERT ON `sql-friends`.`supusr_Addresses` TO 'usrRole';
+GRANT SELECT, UPDATE, INSERT ON `sql-friends`.`supusr_FriendDbMQuoteDbM` TO 'usrRole';
+GRANT SELECT, UPDATE, INSERT ON `sql-friends`.`supusr_Friends` TO 'usrRole';
+GRANT SELECT, UPDATE, INSERT ON `sql-friends`.`supusr_Pets` TO 'usrRole';
+GRANT SELECT, UPDATE, INSERT ON `sql-friends`.`supusr_Quotes` TO 'usrRole';
+
+GRANT 'usrRole' TO 'supUsrRole'; /* supusr is also a usr */
+GRANT DELETE ON `sql-friends`.`supusr_Addresses` TO 'supUsrRole';
+GRANT DELETE ON `sql-friends`.`supusr_FriendDbMQuoteDbM` TO 'supUsrRole';
+GRANT DELETE ON `sql-friends`.`supusr_Friends` TO 'supUsrRole';
+GRANT DELETE ON `sql-friends`.`supusr_Pets` TO 'supUsrRole';
+GRANT DELETE ON `sql-friends`.`supusr_Quotes` TO 'supUsrRole';
+GRANT EXECUTE ON PROCEDURE `sql-friends`.`supusr_spDeleteAll` TO 'supUsrRole';
+
+/* Grant role privileges for dboRole (full privileges) */
+GRANT ALL PRIVILEGES ON `sql-friends`.* TO 'dboRole';
+
+/* Assign users to Roles */
+GRANT 'gstUsrRole' TO 'gstusr'@'%';
+GRANT 'usrRole' TO 'usr'@'%';
+GRANT 'supUsrRole' TO 'supusr'@'%';
+GRANT 'dboRole' TO 'dbo'@'%';
+
+/* Set default roles for users */
+SET DEFAULT ROLE gstUsrRole FOR 'gstusr'@'%';
+SET DEFAULT ROLE usrRole FOR 'usr'@'%';
+SET DEFAULT ROLE supUsrRole FOR 'supusr'@'%';
+SET DEFAULT ROLE dboRole FOR 'dbo'@'%';
+
+/* Flush privileges to ensure changes take effect */
+FLUSH PRIVILEGES;

@@ -1,401 +1,353 @@
-# SQL Database Scripts and Cross-Database Compatibility Guide
+# Database Scripts and Security Documentation
 
-This document provides a comprehensive explanation of the SQL scripts in the `DbContext/SqlScripts` directory, database schema handling differences across SQL Server, MySQL, and PostgreSQL, and how views and stored procedures are integrated into the .NET application.
+This document provides comprehensive documentation for the SQL scripts in `DbContext/SqlScripts`, database role management across different database systems, and the authentication mechanism implemented through `gstusr.spLogin`.
 
 ## Table of Contents
+1. [Overview](#overview)
+2. [SQL Scripts Structure](#sql-scripts-structure)
+3. [Database Role Management by Platform](#database-role-management-by-platform)
+4. [Login System Architecture](#login-system-architecture)
+5. [Security Implementation](#security-implementation)
+6. [Cross-Platform Compatibility](#cross-platform-compatibility)
 
-1. [SQL Scripts Overview](#sql-scripts-overview)
-2. [Database Schema Handling Differences](#database-schema-handling-differences)
-3. [SQL Views Integration](#sql-views-integration)
-4. [Stored Procedures Integration](#stored-procedures-integration)
-5. [Cross-Database Implementation Patterns](#cross-database-implementation-patterns)
+## Overview
 
-## SQL Scripts Overview
+The GoodFriends application implements a comprehensive database security model that works across three major database platforms:
+- **SQL Server** - Full schema-based security with stored procedures
+- **MySQL/MariaDB** - User-based permissions with prefixed naming conventions
+- **PostgreSQL** - Schema-based security with functions and advanced role management
 
-The project contains SQL scripts organized by database provider in the `DbContext/SqlScripts` directory:
+## SQL Scripts Structure
 
+### Directory Organization
 ```
-SqlScripts/
+DbContext/SqlScripts/
 ├── sqlserver/
-│   ├── initDatabase.sql
-│   └── clearDatabase.sql
+│   ├── initDatabase.sql       # Main initialization script
+│   ├── clearDatabase.sql      # Database cleanup
+│   ├── verify-access.sql      # Access verification
+│   ├── verify-login.sql       # Login testing
+│   └── verify-users.sql       # User management verification
 ├── mysql/
-│   ├── initDatabase.sql
-│   └── clearDatabase.sql
+│   ├── initDatabase.sql       # MySQL-specific initialization
+│   ├── clearDatabase.sql      # MySQL cleanup
+│   ├── verify-access.sql      # MySQL access verification
+│   ├── verify-login.sql       # MySQL login testing
+│   └── verify-users.sql       # MySQL user verification
 └── postgres/
-    ├── initDatabase.sql
-    └── clearDatabase.sql
+    ├── initDatabase.sql       # PostgreSQL initialization
+    ├── clearDatabase.sql      # PostgreSQL cleanup
+    ├── verify-access.sql      # PostgreSQL access verification
+    ├── verify-login.sql       # PostgreSQL login testing
+    └── verify-users.sql       # PostgreSQL user verification
 ```
 
-### Common Script Purpose
 
-Each database provider has two main scripts:
-- **`initDatabase.sql`**: Creates database schemas, views, and stored procedures
-- **`clearDatabase.sql`**: Removes all database objects (cleanup script)
+## Database Role Management by Platform
 
-### Key Database Objects Created
+### SQL Server Role Management
 
-All database versions create the following objects:
+SQL Server uses a hierarchical security model with **schemas**, **users**, **logins**, and **roles**.
 
-1. **Schemas**: Logical namespaces for organizing database objects
-2. **Views**: Read-only virtual tables for reporting and aggregated data
-3. **Stored Procedures/Functions**: Executable database routines for data manipulation
+#### Key Concepts:
+- **Logins**: Server-level security principals
+- **Users**: Database-level security principals mapped to logins
+- **Schemas**: Logical containers for database objects
+- **Roles**: Security groups that can be assigned permissions
 
-## Database Schema Handling Differences
-
-Schema handling varies significantly across database platforms:
-
-### SQL Server
+#### Implementation:
 ```sql
--- SQL Server uses true schemas as namespaces
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'gstusr')
-    EXEC('CREATE SCHEMA gstusr');
-GO
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'usr')
-    EXEC('CREATE SCHEMA usr');
-GO
+-- Create logins at server level
+CREATE LOGIN gstusr WITH PASSWORD=N'pa$Word1', DEFAULT_DATABASE=[sql-friends]
 
--- Views are created with schema prefix
-CREATE OR ALTER VIEW gstusr.vwInfoDb AS ...
+-- Create users in database
+CREATE USER gstusrUser FROM LOGIN gstusr;
 
--- Stored procedures use schema prefix
-CREATE OR ALTER PROC supusr.spDeleteAll ...
+-- Create roles
+CREATE ROLE gstUsrRole;
+
+-- Grant schema-level permissions
+GRANT SELECT, EXECUTE ON SCHEMA::gstusr to gstUsrRole;
+
+-- Assign users to roles
+ALTER ROLE gstUsrRole ADD MEMBER gstusrUser;
 ```
 
-**SQL Server Schema Features:**
-- True schema namespaces supported
-- Object names include schema prefix (e.g., `gstusr.vwInfoDb`)
-- Schema-based security and permissions
-- Multiple schemas per database
+#### Schema Structure:
+- `gstusr` - Guest user schema (read-only access to views and procedures)
+- `usr` - Regular user schema (read/write access to data)
+- `supusr` - Super user schema (full access including delete operations)
+- `dbo` - Database owner schema (administrative access)
 
-### MySQL/MariaDB
+### MySQL/MariaDB Role Management
+
+MySQL uses a **user-based** permission system with **host-based** access control. Since MySQL doesn't have true schemas like SQL Server, the application uses **naming prefixes** to simulate schema separation.
+
+#### Key Concepts:
+- **Users**: Combined with host specification (user@host)
+- **Roles**: Available in MySQL 8.0+ and MariaDB 10.0.5+
+- **Privileges**: Granted at database, table, or column level
+- **Definer Rights**: Procedures can run with elevated privileges
+
+#### Implementation:
 ```sql
--- MySQL doesn't support schemas as namespaces
--- Uses naming convention with underscores instead
--- Schema = Database in MySQL terminology
+-- Create users with host specification
+CREATE USER IF NOT EXISTS 'gstusr'@'%' IDENTIFIED BY 'pa$Word1';
 
--- Views use underscore naming convention
-CREATE OR REPLACE VIEW gstusr_vwInfoDb AS ...
+-- Create roles (if supported)
+CREATE ROLE IF NOT EXISTS 'gstUsrRole';
 
--- Procedures use underscore naming convention  
-CREATE OR REPLACE PROCEDURE supusr_spDeleteAll(...) ...
+-- Grant privileges at database level
+GRANT USAGE ON `sql-friends`.* TO 'gstusr'@'%';
+GRANT SELECT ON `sql-friends`.gstusr_* TO 'gstUsrRole';
+
+-- Grant role to user
+GRANT 'gstUsrRole' TO 'gstusr'@'%';
 ```
 
-**MySQL Schema Limitations:**
-- No true schema support (schema = database)
-- Uses naming conventions with underscores as schema simulation
-- Object names: `gstusr_vwInfoDb` instead of `gstusr.vwInfoDb`
-- Single "schema" (database) per connection
+#### Naming Convention:
+- `gstusr_*` - Guest user objects (views, procedures)
+- `usr_*` - Regular user objects
+- `supusr_*` - Super user objects (tables, admin procedures)
+- `dbo_*` - Database owner objects
 
-### PostgreSQL
+### PostgreSQL Role Management
+
+PostgreSQL has the most sophisticated role system, where **roles can be both users and groups**. It supports **schema-based** security similar to SQL Server but with more flexibility.
+
+#### Key Concepts:
+- **Roles**: Unified concept for users and groups
+- **Schemas**: Logical containers with full namespace support
+- **Inheritance**: Roles can inherit permissions from other roles
+- **Row-Level Security**: Advanced security features (not used in this project)
+
+#### Implementation:
 ```sql
--- PostgreSQL has robust schema support
-CREATE SCHEMA IF NOT EXISTS gstusr;
-CREATE SCHEMA IF NOT EXISTS usr;
-CREATE SCHEMA IF NOT EXISTS supusr;
+-- Create login roles (users)
+CREATE ROLE gstusr WITH LOGIN PASSWORD 'pa$Word1';
 
--- Views use quoted identifiers and schema prefix
-CREATE OR REPLACE VIEW gstusr."vwInfoDb" AS ...
+-- Create group roles
+CREATE ROLE gstusrrole;
 
--- Functions (not procedures) with schema prefix
-CREATE OR REPLACE FUNCTION supusr."spDeleteAll"(...) 
-RETURNS RECORD ...
+-- Grant schema permissions
+GRANT USAGE ON SCHEMA gstusr TO gstusrrole;
+GRANT SELECT ON ALL TABLES IN SCHEMA gstusr TO gstusrrole;
+
+-- Grant role membership
+GRANT gstusrrole TO gstusr;
 ```
 
-**PostgreSQL Schema Features:**
-- Full schema namespace support
-- Case-sensitive identifiers require quotes
-- Uses functions instead of stored procedures
-- Advanced schema-based security model
+#### Schema Structure:
+- `gstusr` - Guest user schema (read-only views and functions)
+- `usr` - Regular user schema
+- `supusr` - Super user schema (data tables and admin functions)
+- `public` - Default schema (used for shared objects)
 
-## SQL Views Integration
+## Login System Architecture
 
-Views provide read-only access to aggregated data and are integrated through Entity Framework Core.
+### gstusr.spLogin Stored Procedure/Function
 
-### View Definitions
+The login system is implemented through platform-specific stored procedures or functions that validate user credentials and return user information.
 
-All databases create four main views:
-
-#### 1. Database Info View (`vwInfoDb`)
+#### SQL Server Implementation:
 ```sql
--- Provides overview of database content
-SELECT 
-    (SELECT COUNT(*) FROM supusr.Friends WHERE Seeded = 1) as NrSeededFriends,
-    (SELECT COUNT(*) FROM supusr.Friends WHERE Seeded = 0) as NrUnseededFriends,
-    -- ... more counts for addresses, pets, quotes
-```
-
-#### 2. Friends Info View (`vwInfoFriends`)
-```sql
--- Groups friends by country and city
-SELECT a.Country, a.City, COUNT(*) as NrFriends 
-FROM supusr.Friends f
-INNER JOIN supusr.Addresses a ON f.AddressId = a.AddressId
-GROUP BY a.Country, a.City WITH ROLLUP;
-```
-
-#### 3. Pets Info View (`vwInfoPets`)
-```sql
--- Groups pets by location
-SELECT a.Country, a.City, COUNT(p.PetId) as NrPets 
-FROM supusr.Friends f
-INNER JOIN supusr.Addresses a ON f.AddressId = a.AddressId
-INNER JOIN supusr.Pets p ON p.FriendId = f.FriendId
-GROUP BY a.Country, a.City WITH ROLLUP;
-```
-
-#### 4. Quotes Info View (`vwInfoQuotes`)
-```sql
--- Groups quotes by author
-SELECT Author, COUNT(QuoteText) as NrQuotes 
-FROM supusr.Quotes 
-GROUP BY Author;
-```
-
-### EF Core View Integration
-
-Views are integrated in `MainDbContext.cs` through:
-
-#### 1. DbSet Properties
-```csharp
-#region model the Views
-public DbSet<GstUsrInfoDbDto> InfoDbView { get; set; }
-public DbSet<GstUsrInfoFriendsDto> InfoFriendsView { get; set; }
-public DbSet<GstUsrInfoPetsDto> InfoPetsView { get; set; }
-public DbSet<GstUsrInfoQuotesDto> InfoQuotesView { get; set; }
-#endregion
-```
-
-#### 2. Model Configuration
-```csharp
-protected override void OnModelCreating(ModelBuilder modelBuilder)
-{
-    #region model the Views
-    modelBuilder.Entity<GstUsrInfoDbDto>().ToView("vwInfoDb", "gstusr").HasNoKey();
-    modelBuilder.Entity<GstUsrInfoFriendsDto>().ToView("vwInfoFriends", "gstusr").HasNoKey();
-    modelBuilder.Entity<GstUsrInfoPetsDto>().ToView("vwInfoPets", "gstusr").HasNoKey();
-    modelBuilder.Entity<GstUsrInfoQuotesDto>().ToView("vwInfoQuotes", "gstusr").HasNoKey();        
-    #endregion
-}
-```
-
-#### 3. DTO Mapping
-Views map to C# DTOs in `Models/DTO/GstUsrDto.cs`:
-```csharp
-public class GstUsrInfoDbDto
-{
-    public int NrSeededFriends { get; set; } = 0;
-    public int NrUnseededFriends { get; set; } = 0;
-    public int NrFriendsWithAddress { get; set; } = 0;
-    // ... other properties
-}
-```
-
-#### 4. Repository Usage
-Views are accessed in `AdminDbRepos.cs`:
-```csharp
-private async Task<ResponseItemDto<GstUsrInfoAllDto>> DbInfo()
-{
-    var info = new GstUsrInfoAllDto();
-    info.Db = await _dbContext.InfoDbView.FirstAsync();
-    info.Friends = await _dbContext.InfoFriendsView.ToListAsync();
-    info.Pets = await _dbContext.InfoPetsView.ToListAsync();
-    info.Quotes = await _dbContext.InfoQuotesView.ToListAsync();
-    // ...
-}
-```
-
-## Stored Procedures Integration
-
-The application uses stored procedures/functions for complex data operations, specifically the `spDeleteAll` routine.
-
-### Cross-Database Procedure Definitions
-
-#### SQL Server Stored Procedure
-```sql
-CREATE OR ALTER PROC supusr.spDeleteAll
-    @seededParam BIT = 1,
-    @nrFriendsAffected INT OUTPUT,
-    @nrAddressesAffected INT OUTPUT,
-    @nrPetsAffected INT OUTPUT,
-    @nrQuotesAffected INT OUTPUT
+CREATE OR ALTER PROC gstusr.spLogin
+    @UserNameOrEmail NVARCHAR(100),
+    @UserPassword NVARCHAR(200),
+    @UserId UNIQUEIDENTIFIER OUTPUT,
+    @UserName NVARCHAR(100) OUTPUT,
+    @UserRole NVARCHAR(100) OUTPUT
 AS
-    -- Count affected records
-    SELECT @nrFriendsAffected = COUNT(*) FROM supusr.Friends WHERE Seeded = @seededParam;
-    -- ... similar for other tables
+BEGIN
+    SET @UserId = NULL;
+    SET @UserName = NULL;
+    SET @UserRole = NULL;
     
-    -- Delete records
-    DELETE FROM supusr.Friends WHERE Seeded = @seededParam;
-    -- ... delete from other tables
-    
-    -- Return result set
-    SELECT * FROM gstusr.vwInfoDb;
-GO
+    SELECT Top 1 @UserId = UserId, @UserName = UserName, @UserRole = UserRole 
+    FROM dbo.Users 
+    WHERE ((UserName = @UserNameOrEmail) OR (Email = @UserNameOrEmail)) 
+      AND ([Password] = @UserPassword);
+
+    IF (@UserId IS NULL)
+        THROW 999999, 'Login error: wrong user or password', 1
+END
 ```
 
-#### MySQL Stored Procedure
+#### MySQL Implementation:
 ```sql
-CREATE OR REPLACE PROCEDURE supusr_spDeleteAll(
-    IN seededParam BOOLEAN,
-    OUT nrFriendsAffected INT,
-    OUT nrAddressesAffected INT,
-    OUT nrPetsAffected INT,
-    OUT nrQuotesAffected INT
+CREATE OR REPLACE DEFINER='dbo'@'%' PROCEDURE gstusr_spLogin(
+    IN UserNameOrEmail VARCHAR(100),
+    IN UserPassword VARCHAR(200),
+    OUT UserId CHAR(36),
+    OUT UserName VARCHAR(100),
+    OUT UserRole VARCHAR(100)
 )
 BEGIN
-    -- Count and delete logic similar to SQL Server
-    -- but with MySQL syntax
+    SET UserId = NULL;
+    SET UserName = NULL;
+    SET UserRole = NULL;
+
+    SELECT u.UserId, u.UserName, u.UserRole INTO UserId, UserName, UserRole
+    FROM `sql-friends`.dbo_Users u
+    WHERE (u.UserName = UserNameOrEmail OR u.Email = UserNameOrEmail)
+      AND u.Password = UserPassword
+    LIMIT 1;
+
+    IF UserId IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Login error: wrong user or password';
+    END IF;
 END;
 ```
 
-#### PostgreSQL Function
+#### PostgreSQL Implementation:
 ```sql
-CREATE OR REPLACE FUNCTION supusr."spDeleteAll"(
-    seededParam BOOLEAN DEFAULT true,
-    OUT nrFriendsAffected INTEGER,
-    OUT nrAddressesAffected INTEGER,
-    OUT nrPetsAffected INTEGER,
-    OUT nrQuotesAffected INTEGER
+CREATE OR REPLACE FUNCTION gstusr."spLogin"(
+    usernameoremail VARCHAR(100),
+    userpassword VARCHAR(200),
+    OUT userid UUID,
+    OUT username VARCHAR(100),
+    OUT userrole VARCHAR(100)
 )
 RETURNS RECORD
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
-    -- Function body with PostgreSQL-specific syntax
+    userid := NULL;
+    username := NULL;
+    userrole := NULL;
+
+    SELECT u."UserId", u."UserName", u."UserRole" 
+    INTO userid, username, userrole
+    FROM dbo."Users" u
+    WHERE (u."UserName" = usernameoremail OR u."Email" = usernameoremail)
+      AND u."Password" = userpassword
+    LIMIT 1;
+
+    IF userid IS NULL THEN
+        RAISE EXCEPTION 'Login error: wrong user or password';
+    END IF;
 END;
 $$;
 ```
 
-### C# Stored Procedure Integration
+### LoginDbRepos Integration
 
-The `AdminDbRepos.cs` class demonstrates cross-database stored procedure execution:
+The `LoginDbRepos` class in `DbRepos/LoginDbRepos.cs` provides a unified interface to the login system across all database platforms.
 
-#### 1. Database Provider Detection
+#### Key Features:
+1. **Database Detection**: Automatically detects the database type using connection types
+2. **Parameter Mapping**: Maps .NET parameters to database-specific parameter types
+3. **Password Encryption**: Encrypts passwords before sending to database
+4. **Output Parameter Handling**: Manages output parameters differently for each platform
+
+#### Implementation Example:
 ```csharp
-var connection = _dbContext.Database.GetDbConnection();
-using var command = connection.CreateCommand();
-command.CommandType = CommandType.StoredProcedure;
-
-List<DbParameter> parameters;
-if (connection is MySqlConnection)
+public async Task<ResponseItemDto<LoginUserSessionDto>> LoginUserAsync(LoginCredentialsDto usrCreds)
 {
-    // MySQL-specific parameter setup
-    command.CommandText = "supusr_spDeleteAll";
-    parameters = new List<DbParameter>
+    using (var cmd1 = _dbContext.Database.GetDbConnection().CreateCommand())
     {
-        new MySqlParameter("seededParam", seeded),
-        new MySqlParameter("nrFriendsAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output },
-        // ... other parameters
-    };
-}
-else if (connection is NpgsqlConnection)
-{
-    // PostgreSQL function call
-    command.CommandText = "SELECT nrFriendsAffected, nrAddressesAffected, nrPetsAffected, nrQuotesAffected FROM supusr.\"spDeleteAll\"(@seededParam)";
-    command.CommandType = CommandType.Text;
-    // ... PostgreSQL parameters
-}
-else
-{
-    // SQL Server (default)
-    command.CommandText = "supusr.spDeleteAll";
-    parameters = new List<DbParameter>
-    {
-        new SqlParameter("seededParam", seeded),
-        new SqlParameter("nrFriendsAffected", SqlDbType.Int) { Direction = ParameterDirection.Output },
-        // ... other parameters
-    };
-}
-```
-
-#### 2. Parameter Handling
-```csharp
-command.Parameters.AddRange(parameters.ToArray());
-
-if (connection.State != ConnectionState.Open)
-    await connection.OpenAsync();
-
-if (connection is NpgsqlConnection)
-{
-    // PostgreSQL function execution
-    await command.ExecuteScalarAsync();
-}
-else
-{
-    // SQL Server/MySQL procedure execution with result set
-    using var reader = await command.ExecuteReaderAsync();
-    
-    if (reader.HasRows)
-    {
-        await reader.ReadAsync();
-        var result_set = new GstUsrInfoDbDto
+        var connection = _dbContext.Database.GetDbConnection();
+        
+        if (connection is MySqlConnection)
         {
-            NrSeededFriends = Convert.ToInt32(reader["NrSeededFriends"]),
-            // ... map other fields
-        };
+            cmd1.CommandText = "gstusr_spLogin";
+            // MySQL-specific parameter setup
+        }
+        else if (connection is NpgsqlConnection)
+        {
+            cmd1.CommandText = "SELECT userid, username, userrole FROM gstusr.\"spLogin\"(@usernameoremail, @userpassword)";
+            cmd1.CommandType = CommandType.Text;
+            // PostgreSQL-specific parameter setup
+        }
+        else
+        {
+            cmd1.CommandText = "gstusr.spLogin";
+            // SQL Server-specific parameter setup
+        }
+        
+        // Execute and return results
     }
 }
 ```
 
-#### 3. Output Parameter Access
+## Security Implementation
+
+### Authentication Flow
+1. **Client Request**: User submits username/email and password
+2. **Password Encryption**: `LoginDbRepos` encrypts password using `Encryptions` service
+3. **Database Validation**: Encrypted password is validated against stored hash
+4. **User Information Retrieval**: Valid login returns UserId, UserName, and UserRole
+5. **Session Creation**: Application creates session based on returned user information
+
+### Security Features
+
+#### Password Security:
+- **Encryption**: Passwords are encrypted before database transmission
+- **No Plain Text**: Passwords never transmitted or stored in plain text
+- **Base64 Encoding**: Uses Base64 encoding for encrypted password storage
+
+#### Database Security:
+- **Principle of Least Privilege**: Each role has minimum required permissions
+- **Schema Separation**: Different privilege levels isolated by schemas/prefixes
+- **Stored Procedure Security**: Login logic encapsulated in database procedures
+- **SQL Injection Prevention**: Parameterized queries prevent injection attacks
+
+#### Role-Based Access:
+- **gstusr**: Read-only access to informational views
+- **usr**: Standard CRUD operations on user data
+- **supusr**: Administrative operations including delete
+- **dbo**: Full database administrative access
+
+### Error Handling
+Each platform implements consistent error handling:
+- **SQL Server**: `THROW` statement with custom error codes
+- **MySQL**: `SIGNAL SQLSTATE` with custom messages
+- **PostgreSQL**: `RAISE EXCEPTION` with descriptive messages
+
+## Cross-Platform Compatibility
+
+### Design Patterns
+
+#### 1. Abstraction Layer
+The application uses Entity Framework Core as an abstraction layer, with platform-specific implementations for advanced features like stored procedures.
+
+#### 2. Naming Conventions
+- **SQL Server**: Uses schemas (`gstusr.spLogin`)
+- **MySQL**: Uses prefixes (`gstusr_spLogin`)
+- **PostgreSQL**: Uses quoted schemas (`gstusr."spLogin"`)
+
+#### 3. Data Type Mapping
 ```csharp
-// Extract output parameter values
-int nrFriends = (int)parameters.First(p => p.ParameterName == "nrFriendsAffected").Value;
-int nrAddresses = (int)parameters.First(p => p.ParameterName == "nrAddressesAffected").Value;
-// ... other output parameters
+// SQL Server
+new SqlParameter("UserId", SqlDbType.UniqueIdentifier)
+
+// MySQL
+new MySqlParameter("UserId", MySqlDbType.Guid)
+
+// PostgreSQL
+new NpgsqlParameter("userid", NpgsqlTypes.NpgsqlDbType.Uuid)
 ```
 
-## Cross-Database Implementation Patterns
+#### 4. Procedure vs Function Handling
+- **SQL Server**: Uses stored procedures with OUTPUT parameters
+- **MySQL**: Uses stored procedures with OUT parameters
+- **PostgreSQL**: Uses functions with RETURNS RECORD
 
-### 1. Schema Abstraction
-The application handles schema differences through:
-- **SQL Server**: True schemas (`gstusr.vwInfoDb`)
-- **MySQL**: Underscore naming (`gstusr_vwInfoDb`)
-- **PostgreSQL**: Quoted schemas (`gstusr."vwInfoDb"`)
+### Migration Considerations
 
-### 2. EF Core Database-Specific Contexts
-```csharp
-public class SqlServerDbContext : MainDbContext
-{
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlServer(connectionString, options => 
-            options.EnableRetryOnFailure());
-    }
-}
+When migrating between database platforms:
+1. **Schema Structure**: Update table and object names according to platform conventions
+2. **Permission Model**: Adjust role assignments based on platform capabilities
+3. **Stored Procedures**: Convert procedures to appropriate platform syntax
+4. **Connection Strings**: Update connection parameters for target platform
+5. **Entity Framework**: Update provider packages and configurations
 
-public class MySqlDbContext : MainDbContext
-{
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-            b => b.SchemaBehavior(Microting.EntityFrameworkCore.MySql.Infrastructure.MySqlSchemaBehavior.Translate, 
-                (schema, table) => $"{schema}_{table}"));
-    }
-}
-```
+### Testing and Verification
 
-### 3. Provider-Specific Parameter Handling
-The repository layer detects the database provider at runtime and adjusts:
-- Parameter types and syntax
-- Command execution methods
-- Result set handling
-- Error handling patterns
+Each platform includes verification scripts:
+- **verify-users.sql**: Validates user creation and role assignments
+- **verify-access.sql**: Tests permission levels for each role
+- **verify-login.sql**: Tests the login functionality
 
-### 4. View Naming Strategy
-- **SQL Server/PostgreSQL**: Schema.ViewName
-- **MySQL**: Schema_ViewName (translated automatically by EF Core)
-
-This architecture provides database portability while maintaining optimal performance and feature utilization for each database platform.
-
-## Best Practices
-
-1. **Use Views for Reporting**: Complex aggregations are better handled in database views rather than application code
-2. **Performance-Critical Operations**: Use stored procedures/functions for performance-hungry SQL operations like bulk deletes (e.g., `spDeleteAll`) rather than Entity Framework Core operations, as database-native operations are significantly faster for large datasets
-3. **Provider Detection**: Always detect the database provider at runtime for stored procedure calls
-3. **Schema Abstraction**: Use EF Core's built-in schema translation features when possible
-4. **Error Handling**: Implement database-specific error handling for stored procedures
-5. **Output Parameters**: Handle output parameters differently based on database provider capabilities
-6. **Case Sensitivity**: Be aware of case sensitivity differences, especially with PostgreSQL
-
-This approach ensures the application remains database-agnostic while leveraging the specific strengths of each database platform.
+This comprehensive approach ensures consistent security and functionality across all supported database platforms while leveraging each platform's specific strengths and capabilities.

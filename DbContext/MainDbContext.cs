@@ -27,6 +27,9 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
     public DbSet<AddressDbM> Addresses { get; set; }
     public DbSet<PetDbM> Pets { get; set; }
     public DbSet<QuoteDbM> Quotes { get; set; }    
+
+    //User for login
+    public DbSet<UserDbM> Users { get; set; }
     #endregion
 
     #region constructors

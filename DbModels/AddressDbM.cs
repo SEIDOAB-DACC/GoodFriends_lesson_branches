@@ -13,19 +13,17 @@ namespace DbModels;
 [Index(nameof(StreetAddress), nameof(ZipCode), nameof(City), nameof(Country), IsUnique = true)]
 sealed public class AddressDbM : Address, ISeed<AddressDbM>, IEquatable<AddressDbM>
 {
-    // Override base class properties to add EF Core attributes
-    // getters and setters are needed for EF Core and call base class implementation to keep data integrity
-    [Key]
+    [Key]     
     public override Guid AddressId { get; set; }
 
     [Required]
-    public override string StreetAddress  { get; set; }
+    public override string StreetAddress { get; set; }
     [Required]
-    public override int ZipCode  { get; set; }
+    public override int ZipCode { get; set; }
     [Required]
-    public override string City  { get; set; }
+    public override string City { get; set; }
     [Required]
-    public override string Country  { get; set; }
+    public override string Country { get; set; }
 
     #region implementing IEquatable
     public bool Equals(AddressDbM other) => (other != null) && ((StreetAddress, ZipCode, City, Country) ==

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DbContext.Migrations.SqlServerDbContext
 {
     [DbContext(typeof(MainDbContext.SqlServerDbContext))]
-    [Migration("20251022102438_miInitial")]
+    [Migration("20251022102745_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -146,6 +146,32 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.HasKey("QuoteId");
 
                     b.ToTable("Quotes", "supusr");
+                });
+
+            modelBuilder.Entity("DbModels.UserDbM", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("UserRole")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Users", "dbo");
                 });
 
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>

@@ -12,16 +12,46 @@ public class csFriend : IFriend, ISeed<csFriend>
     public virtual string Email { get; set; }
     public DateTime? Birthday { get; set; } = null;
 
-    // Model relationships
-    // One Friend may only have one address
+    //One Friends can only have one address
     public virtual IAddress Address { get; set; } = null;
 
-    // One Friend may have many favorite pets
+    //One Friends can have many favorite pets
     public virtual List<IPet> Pets { get; set; } = null;
 
-    // One Friend may have many favorite quotes
+    //One Friends can have many favorite quotes
     public virtual List<IQuote> Quotes { get; set; } = null;
 
+
+    public string FullName => $"{FirstName} {LastName}";
+
+    public override string ToString()
+    {
+        var sRet = $"{FullName} [{FriendId}]";
+
+        if (Address != null)
+            sRet += $"\n  - Lives at {Address}";
+        else
+            sRet += $"\n  - Has no address";
+
+
+        if (Pets != null && Pets.Count > 0)
+        {
+            sRet += $"\n  - Has pets";
+            foreach (var pet in Pets)
+            {
+                sRet += $"\n     {pet}";
+            }
+        }
+        else
+            sRet += $"\n  - Has no pets";
+
+        if (Birthday != null)
+        {
+            sRet += $"\n  - Has birthday on {Birthday:D}";
+        }
+
+        return sRet;
+    }
 
     #region contructors
     public csFriend() { }

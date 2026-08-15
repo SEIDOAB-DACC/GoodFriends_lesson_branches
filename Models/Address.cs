@@ -11,8 +11,8 @@ public class Address : IAddress, ISeed<Address>, IEquatable<Address>
     public virtual string City { get; set; }
     public virtual string Country { get; set; }
 
-    // Model relationships
-    // One Address may have many friends (= one Address can contain several residents)
+    public override string ToString() => $"{StreetAddress}, {ZipCode} {City}, {Country}";
+
     public virtual List<IFriend> Friends { get; set; } = null;
 
     #region constructors

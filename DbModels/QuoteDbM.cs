@@ -12,7 +12,7 @@ namespace DbModels;
 sealed public class QuoteDbM : Quote, ISeed<QuoteDbM>, IEquatable<QuoteDbM>
 {
     [Key]
-    public override Guid QuoteId  { get; set; }
+    public override Guid QuoteId { get; set; }
 
     #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [NotMapped]

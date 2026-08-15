@@ -11,13 +11,13 @@ namespace DbModels;
 sealed public class PetDbM : Pet, ISeed<PetDbM>
 {
     [Key]    
-    public override Guid PetId  { get; set; }
+    public override Guid PetId { get; set; }
 
     [JsonIgnore]
     public Guid FriendId { get; set; }  //Enforces Cascade Delete
 
     [Required]
-    public override string Name  { get; set; }
+    public override string Name { get; set; }
 
     #region adding more readability to an enum type in the database
     public string strKind

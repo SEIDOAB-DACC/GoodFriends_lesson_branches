@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DbContext.Migrations.PostgresDbContext
+namespace DbContext.Migrations.SqlServerDbContext
 {
     /// <inheritdoc />
     public partial class miInitial : Migration
@@ -14,17 +14,20 @@ namespace DbContext.Migrations.PostgresDbContext
             migrationBuilder.EnsureSchema(
                 name: "supusr");
 
+            migrationBuilder.EnsureSchema(
+                name: "dbo");
+
             migrationBuilder.CreateTable(
                 name: "Addresses",
                 schema: "supusr",
                 columns: table => new
                 {
-                    AddressId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AddressId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     StreetAddress = table.Column<string>(type: "varchar(200)", nullable: false),
-                    ZipCode = table.Column<int>(type: "integer", nullable: false),
+                    ZipCode = table.Column<int>(type: "int", nullable: false),
                     City = table.Column<string>(type: "varchar(200)", nullable: false),
                     Country = table.Column<string>(type: "varchar(200)", nullable: false),
-                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
+                    Seeded = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -36,10 +39,10 @@ namespace DbContext.Migrations.PostgresDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    QuoteId = table.Column<Guid>(type: "uuid", nullable: false),
+                    QuoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     QuoteText = table.Column<string>(type: "varchar(200)", nullable: true),
                     Author = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
+                    Seeded = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,17 +50,33 @@ namespace DbContext.Migrations.PostgresDbContext
                 });
 
             migrationBuilder.CreateTable(
+                name: "Users",
+                schema: "dbo",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserName = table.Column<string>(type: "varchar(200)", nullable: false),
+                    Password = table.Column<string>(type: "varchar(200)", nullable: false),
+                    UserRole = table.Column<string>(type: "varchar(200)", nullable: false),
+                    Email = table.Column<string>(type: "varchar(200)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.UserId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Friends",
                 schema: "supusr",
                 columns: table => new
                 {
-                    FriendId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FirstName = table.Column<string>(type: "varchar(200)", nullable: false),
-                    AddressId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AddressId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     LastName = table.Column<string>(type: "varchar(200)", nullable: true),
                     Email = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Birthday = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
+                    Birthday = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Seeded = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -76,8 +95,8 @@ namespace DbContext.Migrations.PostgresDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    FriendsDbMFriendId = table.Column<Guid>(type: "uuid", nullable: false),
-                    QuotesDbMQuoteId = table.Column<Guid>(type: "uuid", nullable: false)
+                    FriendsDbMFriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    QuotesDbMQuoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -103,14 +122,14 @@ namespace DbContext.Migrations.PostgresDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    PetId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FriendId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "varchar(200)", nullable: false),
                     strKind = table.Column<string>(type: "varchar(200)", nullable: true),
                     strMood = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Kind = table.Column<int>(type: "integer", nullable: false),
-                    Mood = table.Column<int>(type: "integer", nullable: false),
-                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
+                    Kind = table.Column<int>(type: "int", nullable: false),
+                    Mood = table.Column<int>(type: "int", nullable: false),
+                    Seeded = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -172,6 +191,10 @@ namespace DbContext.Migrations.PostgresDbContext
             migrationBuilder.DropTable(
                 name: "Pets",
                 schema: "supusr");
+
+            migrationBuilder.DropTable(
+                name: "Users",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
                 name: "Quotes",

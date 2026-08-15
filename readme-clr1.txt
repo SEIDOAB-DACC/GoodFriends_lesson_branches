@@ -31,7 +31,24 @@ To create the AppWebApi
 
    Verify your can execute endpoint Admin/Environment and Guest/Info
 
-5. Use endpoint Admin/Seed to seed the database, Admin/RemoveSeed to remove the seed
+5. Use endpoint Admin/SeedUsers to seed users into the the database. 
+   Use Azure Data Studio to verify content in Users Table
+
+6. Use endpoint Admin/Seed to seed the database, Admin/RemoveSeed to remove the seed
    Verify database seed with endpoint Guest/Info
 
-6. You can now use and play with all endpoints
+7. As dbo you can now use and play with all endpoints
+
+8. Use endpoint Guest/LoginUser to test call to databse stored proceudre spLogin
+{
+  "userNameOrEmail": "dbo1",
+  "password": "dbo1"
+}
+
+9. In folder AppWebApi modify appsettings.json tag 
+   "DefaultDataUser": "dbo"  to "gstusr" 
+   Restart the application. You will see that the database rejects all endpoints except Admin/Environment, Admin/Log, Guest/Info and Guest/LoginUser
+
+   Change "DefaultDataUser": to "usr" or "supusr"
+   Restart the application. You will see that the database rejects all endpoints except those database calls privileged by the role
+
