@@ -8,7 +8,6 @@ using Configuration;
 using Configuration.Options;
 
 using Microsoft.Extensions.Options;
-using Models;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -28,11 +27,30 @@ namespace AppWebApi.Controllers
         readonly DatabaseConnections _dbConnections = null;
         readonly IAdminService _service;
 
+        //GET: api/admin/connectionstring
+        [HttpGet()]
+        [ActionName("ConnectionString")]
+        [ProducesResponseType(200, Type = typeof(string))]
+        public IActionResult ConnectionString()
+        {
+            try
+            {
+                var connectionString = _configuration.GetConnectionString("SqlServerDocker");
 
+                _logger.LogInformation($"{nameof(ConnectionString)}:\n{JsonConvert.SerializeObject(connectionString)}");
+                return Ok(connectionString);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(ConnectionString)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+        
         //GET: api/admin/environment
         [HttpGet()]
         [ActionName("Environment")]
-        [ProducesResponseType(200, Type = typeof(DatabaseConnections.SetupInformation))]
+        [ProducesResponseType(200, Type = typeof(string))]
         public IActionResult Environment()
         {
             try
@@ -65,65 +83,24 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //GET: api/admin/quotes
+
+        //GET: api/admin/seed?count={count}
         [HttpGet()]
-        [ActionName("Quotes")]
-        [ProducesResponseType(200, Type = typeof(List<IQuote>))]
+        [ActionName("Seed")]
+        [ProducesResponseType(200, Type = typeof(string))]
         [ProducesResponseType(400, Type = typeof(string))]
-        public IActionResult Quotes()
+        public async Task<IActionResult> Seed()
         {
             try
             {
-                _logger.LogInformation($"{nameof(Quotes)}");
-                var quotes = _service.Quotes();
+                _logger.LogInformation($"{nameof(Seed)}");
+                await _service.SeedAsync();
 
-                return Ok(quotes);
+                return Ok("Seeding completed successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{nameof(Quotes)}: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
-        }
-
-        //GET: api/admin/encryptedquotes
-        [HttpGet()]
-        [ActionName("EncryptedQuotes")]
-        [ProducesResponseType(200, Type = typeof(List<string>))]
-        [ProducesResponseType(400, Type = typeof(string))]
-        public IActionResult EncryptedQuotes()
-        {
-            try
-            {
-                _logger.LogInformation($"{nameof(EncryptedQuotes)}");
-                var quotes = _service.EncryptedQuotes();
-
-                return Ok(quotes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(EncryptedQuotes)}: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
-        }
-
-        //GET: api/admin/decryptedquotes
-        [HttpGet()]
-        [ActionName("DecryptedQuote")]
-        [ProducesResponseType(200, Type = typeof(IQuote))]
-        [ProducesResponseType(400, Type = typeof(string))]
-        public IActionResult DecryptedQuote(string encryptedQuote)
-        {
-            try
-            {
-                _logger.LogInformation($"{nameof(DecryptedQuote)}");
-                var quote = _service.DecryptedQuote(encryptedQuote);
-
-                return Ok(quote);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(DecryptedQuote)}: {ex.Message}");
+                _logger.LogError($"{nameof(Seed)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }

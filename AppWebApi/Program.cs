@@ -1,6 +1,11 @@
-﻿using Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+
+using Configuration;
 using Configuration.Options;
+using DbContext;
+using DbRepos;
 using Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +60,15 @@ builder.Services.Configure<VersionOptions>(options =>VersionOptions.ReadFromAsse
 //hence, AddLogging should not be used here
 builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
 
-
+// adding DbContexts
+builder.Services.AddDbContext<MainDbContext>(options =>
+{
+    // SQLSERVER
+    //var connectionString = builder.Configuration["ConnectionStrings:SqlServerDocker"];  //alternative to below
+    var connectionString = builder.Configuration.GetConnectionString("SqlServerDocker");
+    options.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
+    // SQLSERVER END
+});
 #endregion
 
 
@@ -71,12 +84,12 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v2.0",
 #endif
         Description = "This is an API used in Seido's various software developer training courses."
-        + $"<br>DataSet: {builder.Configuration["DatabaseConnections:UseDataSetWithTag"]}"
-        + $"<br>DefaultDataUser: {builder.Configuration["DatabaseConnections:DefaultDataUser"]}"
     });
 });
 
-//Inject Services
+//Inject DbRepos and Services
+builder.Services.AddScoped<AdminDbRepos>();
+
 builder.Services.AddScoped<IAdminService, AdminServiceDb>();
 
 var app = builder.Build();
