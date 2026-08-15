@@ -1,13 +1,18 @@
-var builder = WebApplication.CreateBuilder(args);
+﻿var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// NOTE: global cors policy needed for JS and React frontends
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
 builder.Services.AddEndpointsApiExplorer();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -21,7 +26,9 @@ builder.Services.AddSwaggerGen(c =>
 #else
         Version = "v2.0",
 #endif
-        Description = "This is an Microsoft template using Swagger"
+        Description = "This is an API used in Seido's various software developer training courses."
+        + $"<br>DataSet: {builder.Configuration["DatabaseConnections:UseDataSetWithTag"]}"
+        + $"<br>DefaultDataUser: {builder.Configuration["DatabaseConnections:DefaultDataUser"]}"
     });
 });
 
@@ -40,9 +47,9 @@ var app = builder.Build();
 }
 
 app.UseHttpsRedirection();
+app.UseCors(); 
 
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
