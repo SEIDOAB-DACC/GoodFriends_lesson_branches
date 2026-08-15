@@ -1,419 +1,207 @@
-# CRUD Pattern Implementation in GoodFriends Project
+# RegEx Validation Documentation
 
-## Overview
+This document explains all the Regular Expression (RegEx) checks and validation patterns used in the GoodFriends application for input validation and data integrity.
 
-This document explains how the CRUD (Create, Read, Update, Delete) pattern is implemented in the GoodFriends project, specifically focusing on the layered architecture where Controllers use Services, which in turn use DbRepos (Database Repositories) to manage data access operations. The project demonstrates a clean separation of concerns with DTOs (Data Transfer Objects) managing the Create and Update operations with navigation property handling.
+## Table of Contents
+1. [Controller Validations](#controller-validations)
+2. [DTO EnsureValidity Methods](#dto-ensurevalidity-methods)
+3. [RegEx Pattern Explanations](#regex-pattern-explanations)
+4. [Best Practices](#best-practices)
 
-## Architecture Overview
+## Controller Validations
 
-The project follows a 3-layer architecture:
+### AddressesController.Read Method
+**Location:** `AppWebApi/Controllers/AddressesController.cs` (Line ~37)
 
-```
-Controllers → Services → DbRepos → Database
-     ↓           ↓          ↓
-   HTTP API → Business → Data Access
-```
-
-### Key Components
-
-1. **Controllers** (`AppWebApi/Controllers/`): Handle HTTP requests and responses
-2. **Services** (`Services/`): Business logic layer (thin in this project)
-3. **DbRepos** (`DbRepos/`): Data access layer with Entity Framework Core
-4. **Models** (`Models/`): Domain models and DTOs
-5. **DbModels** (`DbModels/`): Entity Framework database models
-
-## CRUD Implementation Details
-
-### Read Operations (R in CRUD)
-
-#### 1. Read Multiple Items (Friends List)
-**Flow**: `FriendsController.Read()` → `FriendsServiceDb.ReadFriendsAsync()` → `FriendsDbRepos.ReadFriendsAsync()`
-
-**Controller Endpoint**:
 ```csharp
-[HttpGet()]
-[ActionName("Read")]
-public async Task<IActionResult> Read(string seeded = "true", string flat = "true",
-    string filter = null, string pageNr = "0", string pageSize = "10")
-```
-
-**Key Features**:
-- **Pagination**: Supports page number and page size
-- **Filtering**: Filter by first name or last name
-- **Flat vs Deep Loading**: Choice between loading navigation properties or not
-- **Seeded Data Toggle**: Filter between seeded and user-created data
-
-**DbRepos Implementation**:
-```csharp
-public async Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
+// RegEx check to ensure filter only contains a-z, 0-9, and spaces
+if (!string.IsNullOrEmpty(filter) && !Regex.IsMatch(filter, @"^[a-zA-Z0-9\s]*$"))
 {
-    IQueryable<FriendDbM> query;
-    if (flat)
+    throw new ArgumentException("Filter can only contain letters (a-z), numbers (0-9), and spaces.");
+}
+```
+
+**Purpose:** Validates the filter parameter in the Read API endpoint to prevent injection attacks and ensure only safe characters are used for filtering.
+
+**Pattern:** `^[a-zA-Z0-9\s]*$`
+- **Allowed Characters:** Letters (a-z, A-Z), numbers (0-9), and spaces
+- **Security:** Prevents SQL injection and other malicious input
+
+## DTO EnsureValidity Methods
+
+The `EnsureValidity()` methods in various DTO classes provide comprehensive input validation before data processing.
+
+### FriendCuDto Validation
+**Location:** `Models/DTO/CuDto.cs` (Line ~40)
+
+#### FirstName and LastName Validation
+```csharp
+if (!string.IsNullOrEmpty(FirstName) && !Regex.IsMatch(FirstName, @"^[a-zA-Z0-9\s]*$"))
+{
+    throw new ArgumentException("FirstName can only contain letters (a-z), numbers (0-9), and spaces.");
+}
+```
+
+**Pattern:** `^[a-zA-Z0-9\s]*$`
+- **Purpose:** Ensures names contain only alphanumeric characters and spaces
+- **Rationale:** Allows for names with numbers (e.g., "John Jr. 3rd") while preventing special characters that could cause issues
+
+#### Email Validation
+```csharp
+if (!string.IsNullOrEmpty(Email) && !Regex.IsMatch(Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+{
+    throw new ArgumentException("Email has to be a valid email address.");
+}
+```
+
+**Pattern:** `^[^@\s]+@[^@\s]+\.[^@\s]+$`
+- **Purpose:** Validates basic email format
+- **Breakdown:**
+  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (local part)
+  - `@` - Literal @ symbol
+  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (domain name)
+  - `\.` - Literal dot
+  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (top-level domain)
+
+#### Birthday Validation
+```csharp
+if (Birthday.HasValue)
+{
+    var dateString = Birthday.Value.ToString("yyyy-MM-dd");
+    var parsedDate = DateTime.Parse(dateString);
+    
+    if (parsedDate != Birthday.Value || parsedDate.Year < 1900 || parsedDate > DateTime.Now)
     {
-        query = _dbContext.Friends.AsNoTracking();
+        throw new ArgumentException("Birthday must be a valid date in the past (after 1900) or null.");
     }
-    else
-    {
-        query = _dbContext.Friends.AsNoTracking()
-            .Include(i => i.AddressDbM)
-            .Include(i => i.PetsDbM)
-            .Include(i => i.QuotesDbM);
-    }
-    // ... filtering, paging, and execution
 }
 ```
 
-**Performance Optimizations**:
-- Uses `AsNoTracking()` for read-only operations
-- Conditional `Include()` statements for navigation properties
-- Server-side filtering and paging
+**Purpose:** Ensures Birthday is a valid date using DateTime.Parse validation
+- **Validates:** Date exists and is parseable
+- **Range Check:** Must be after 1900 and not in the future
+- **Nullable:** Allows null values
 
-#### 2. Read Single Item
-**Flow**: `FriendsController.ReadItem()` → `FriendsServiceDb.ReadFriendAsync()` → `FriendsDbRepos.ReadFriendAsync()`
+### AddressCuDto Validation
+**Location:** `Models/DTO/CuDto.cs` (Line ~93)
 
-**Navigation Property Loading**:
-- **Flat Mode**: Only loads the friend entity
-- **Deep Mode**: Loads all related entities (Address, Pets, Quotes)
-
-### Create Operations (C in CRUD)
-
-#### DTO-Based Creation Process
-**Flow**: `FriendsController.CreateItem()` → `FriendsServiceDb.CreateFriendAsync()` → `FriendsDbRepos.CreateFriendAsync()`
-
-**Controller Endpoint**:
+#### Address Fields Validation
 ```csharp
-[HttpPost()]
-[ActionName("CreateItem")]
-public async Task<IActionResult> CreateItem([FromBody] FriendCuDto item)
-```
-
-**DTO Structure** (`FriendCuDto`):
-```csharp
-public class FriendCuDto
+if (!string.IsNullOrEmpty(StreetAddress) && !Regex.IsMatch(StreetAddress, @"^[a-zA-Z0-9\s]*$"))
 {
-    public virtual Guid? FriendId { get; set; }         // Must be null for creation
-    public virtual string FirstName { get; set; }
-    public virtual string LastName { get; set; }
-    public virtual string Email { get; set; }
-    public DateTime? Birthday { get; set; }
-    
-    // Navigation Properties as IDs
-    public virtual Guid? AddressId { get; set; }        // Single relationship
-    public virtual List<Guid> PetsId { get; set; }     // Multiple relationships
-    public virtual List<Guid> QuotesId { get; set; }   // Multiple relationships
+    throw new ArgumentException("StreetAddress can only contain letters (a-z), numbers (0-9), and spaces.");
 }
 ```
 
-#### Comparison: FriendCuDto vs Friend Model
+**Pattern:** `^[a-zA-Z0-9\s]*$` (same for City and Country)
+- **Purpose:** Ensures address components contain only safe characters
+- **Allows:** Letters, numbers, and spaces for international address compatibility
 
-**Domain Model** (`Friend`):
+#### ZipCode Validation
 ```csharp
-public class Friend : IFriend
-{
-    public virtual Guid FriendId { get; set; }          // Required, not nullable
-    public virtual string FirstName { get; set; }
-    public virtual string LastName { get; set; }
-    public virtual string Email { get; set; }
-    public DateTime? Birthday { get; set; }
-    
-    // Navigation Properties as Full Objects
-    public virtual IAddress Address { get; set; }       // Full Address object
-    public virtual List<IPet> Pets { get; set; }        // Full Pet objects
-    public virtual List<IQuote> Quotes { get; set; }    // Full Quote objects
-    
-    // Computed Properties
-    public string FullName => $"{FirstName} {LastName}";
-}
+if (ZipCode <= 0) throw new ArgumentException("ZipCode has to be larger than zero");
 ```
 
-**Key Differences**:
+**Purpose:** Ensures ZipCode is a positive integer
 
-| Aspect | Friend Model | FriendCuDto |
-|--------|-------------|-------------|
-| **FriendId** | `Guid` (required) | `Guid?` (nullable for creation) |
-| **Navigation Properties** | Full objects (`IAddress`, `List<IPet>`) | ID references (`Guid?`, `List<Guid>`) |
-| **Purpose** | Domain representation with behavior | Data transfer for Create/Update |
-| **Computed Properties** | `FullName`, `ToString()` methods | None - pure data transfer |
-| **Usage** | Read operations, business logic | Create/Update operations only |
-| **Serialization** | May have circular references | Clean, flat structure |
-| **Validation** | Domain rules and constraints | Input validation focused |
+### PetCuDto Validation
+**Location:** `Models/DTO/CuDto.cs` (Line ~134)
 
-**Why This Design?**
-
-1. **Avoid Circular References**: Navigation properties as IDs prevent JSON serialization issues
-2. **Security**: DTOs expose only fields that should be updatable
-3. **Performance**: Lighter payload, no need to serialize full related objects
-4. **Flexibility**: Can reference existing entities without loading them into memory
-5. **Validation**: Can validate that referenced entities exist before creating relationships
-
-**DTO Construction from Domain Model**:
+#### Pet Name Validation
 ```csharp
-public FriendCuDto(IFriend org)
+if (!string.IsNullOrEmpty(Name) && !Regex.IsMatch(Name, @"^[a-zA-Z0-9\s]*$"))
 {
-    FriendId = org.FriendId;
-    FirstName = org.FirstName;
-    LastName = org.LastName;
-    Email = org.Email;
-    Birthday = org.Birthday;
-
-    // Convert navigation properties to IDs
-    AddressId = org?.Address?.AddressId;
-    PetsId = org.Pets?.Select(i => i.PetId).ToList();
-    QuotesId = org.Quotes?.Select(i => i.QuoteId).ToList();
+    throw new ArgumentException("Name can only contain letters (a-z), numbers (0-9), and spaces.");
 }
 ```
 
-**DbRepos Creation Process**:
+**Pattern:** `^[a-zA-Z0-9\s]*$`
+- **Purpose:** Validates pet names using the same safe character set
+
+#### Enum Validations
 ```csharp
-public async Task<ResponseItemDto<IFriend>> CreateFriendAsync(FriendCuDto itemDto)
-{
-    // 1. Validate that FriendId is null
-    if (itemDto.FriendId != null)
-        throw new ArgumentException($"{nameof(itemDto.FriendId)} must be null when creating a new object");
-
-    // 2. Create new database entity from DTO
-    var item = new FriendDbM(itemDto);
-
-    // 3. Update navigation properties
-    await navProp_FriendCUdto_to_FriendDbM(itemDto, item);
-
-    // 4. Add to context and save
-    _dbContext.Friends.Add(item);
-    await _dbContext.SaveChangesAsync();
-
-    // 5. Return fully populated item
-    return await ReadFriendAsync(item.FriendId, false);
-}
+if (!Enum.IsDefined(typeof(AnimalKind), Kind)) throw new ArgumentException("Kind has to be set to a valid value");
+if (!Enum.IsDefined(typeof(AnimalMood), Mood)) throw new ArgumentException("Mood has to be set to a valid value");
 ```
 
-**Navigation Property Handling**:
+**Purpose:** Ensures enum values are valid and defined in the respective enumerations
+
+### QuoteCuDto Validation
+**Location:** `Models/DTO/CuDto.cs` (Line ~167)
+
+#### Quote Text Validation
 ```csharp
-private async Task navProp_FriendCUdto_to_FriendDbM(FriendCuDto itemDtoSrc, FriendDbM itemDst)
+if (!string.IsNullOrEmpty(Quote) && !Regex.IsMatch(Quote, @"^[a-zA-Z0-9\s.,!?']*$"))
 {
-    // Single relationship (Address)
-    itemDst.AddressDbM = (itemDtoSrc.AddressId != null) ? 
-        await _dbContext.Addresses.FirstOrDefaultAsync(a => (a.AddressId == itemDtoSrc.AddressId)) : null;
-
-    // Multiple relationships (Pets)
-    if (itemDtoSrc.PetsId != null)
-    {
-        var pets = new List<PetDbM>();
-        foreach (var id in itemDtoSrc.PetsId)
-        {
-            var p = await _dbContext.Pets.FirstOrDefaultAsync(i => i.PetId == id);
-            if (p == null) throw new ArgumentException($"Pet id {id} not existing");
-            pets.Add(p);
-        }
-        itemDst.PetsDbM = pets;
-    }
-
-    // Multiple relationships (Quotes) - similar pattern
+    throw new ArgumentException("Quote can only contain letters (a-z), numbers (0-9), spaces, and punctuation (.,!?').");
 }
 ```
 
-### Update Operations (U in CRUD)
+**Pattern:** `^[a-zA-Z0-9\s.,!?']*$`
+- **Purpose:** Allows quotes to contain common punctuation for natural language
+- **Allowed Punctuation:** Period (.), comma (,), exclamation (!), question (?), apostrophe (')
+- **Rationale:** Quotes need punctuation for proper grammar and meaning
 
-#### DTO-Based Update Process
-**Flow**: `FriendsController.UpdateItem()` → `FriendsServiceDb.UpdateFriendAsync()` → `FriendsDbRepos.UpdateFriendAsync()`
-
-**Controller Endpoint**:
+#### Author Validation
 ```csharp
-[HttpPut("{id}")]
-[ActionName("UpdateItem")]
-public async Task<IActionResult> UpdateItem(string id, [FromBody] FriendCuDto item)
+if (!string.IsNullOrEmpty(Author) && !Regex.IsMatch(Author, @"^[a-zA-Z0-9\s]*$"))
 {
-    var idArg = Guid.Parse(id);
-    if (item.FriendId != idArg) throw new ArgumentException("Id mismatch");
-    // ... call service
+    throw new ArgumentException("Author can only contain letters (a-z), numbers (0-9), and spaces.");
 }
 ```
 
-**DbRepos Update Process**:
-```csharp
-public async Task<ResponseItemDto<IFriend>> UpdateFriendAsync(FriendCuDto itemDto)
-{
-    // 1. Find existing entity with navigation properties
-    var item = await _dbContext.Friends
-        .Where(i => i.FriendId == itemDto.FriendId)
-        .Include(i => i.AddressDbM)
-        .Include(i => i.PetsDbM)
-        .Include(i => i.QuotesDbM)
-        .FirstOrDefaultAsync<FriendDbM>();
+**Pattern:** `^[a-zA-Z0-9\s]*$`
+- **Purpose:** Validates author names using the standard safe character set
 
-    if (item == null) throw new ArgumentException($"Item {itemDto.FriendId} is not existing");
+## RegEx Pattern Explanations
 
-    // 2. Update scalar properties
-    item.UpdateFromDTO(itemDto);
+### Common Pattern: `^[a-zA-Z0-9\s]*$`
+- `^` - Start of string anchor
+- `[a-zA-Z0-9\s]` - Character class containing:
+  - `a-z` - Lowercase letters
+  - `A-Z` - Uppercase letters
+  - `0-9` - Digits
+  - `\s` - Whitespace characters (spaces, tabs, newlines)
+- `*` - Zero or more of the preceding character class
+- `$` - End of string anchor
 
-    // 3. Update navigation properties
-    await navProp_FriendCUdto_to_FriendDbM(itemDto, item);
+### Extended Pattern: `^[a-zA-Z0-9\s.,!?']*$`
+Same as above, plus:
+- `.` - Period
+- `,` - Comma
+- `!` - Exclamation mark
+- `?` - Question mark
+- `'` - Apostrophe/single quote
 
-    // 4. Mark as updated and save
-    _dbContext.Friends.Update(item);
-    await _dbContext.SaveChangesAsync();
+### Email Pattern: `^[^@\s]+@[^@\s]+\.[^@\s]+$`
+- `[^@\s]` - Negated character class (anything except @ and whitespace)
+- `+` - One or more of the preceding character class
+- `@` - Literal @ symbol
+- `\.` - Escaped period (literal dot)
 
-    // 5. Return updated item
-    return await ReadFriendAsync(item.FriendId, false);
-}
-```
+## Best Practices
 
-**Entity Update Method** (`FriendDbM.UpdateFromDTO()`):
-```csharp
-public FriendDbM UpdateFromDTO(FriendCuDto org)
-{
-    FirstName = org.FirstName;
-    LastName = org.LastName;
-    Birthday = org.Birthday;
-    return this;
-}
-```
+### Security Considerations
+1. **Input Sanitization:** All user inputs are validated before processing
+2. **Injection Prevention:** RegEx patterns prevent SQL injection and XSS attacks
+3. **Consistent Patterns:** Similar fields use the same validation patterns for consistency
 
-### Delete Operations (D in CRUD)
+### Validation Strategy
+1. **Null Checks:** All validations check for null/empty before applying RegEx
+2. **Clear Error Messages:** Each validation provides specific, user-friendly error messages
+3. **Exception Handling:** Uses `ArgumentException` for validation failures
+4. **DateTime Validation:** Uses `DateTime.Parse` for robust date validation
 
-#### Simple Delete Process
-**Flow**: `FriendsController.DeleteItem()` → `FriendsServiceDb.DeleteFriendAsync()` → `FriendsDbRepos.DeleteFriendAsync()`
+### Maintenance Guidelines
+1. **Pattern Updates:** When adding new allowed characters, update both the RegEx and error message
+2. **Documentation:** Keep this document updated when validation rules change
+3. **Testing:** Ensure all validation patterns are thoroughly tested with edge cases
+4. **Consistency:** Use the same patterns across similar fields for user predictability
 
-**Controller Endpoint**:
-```csharp
-[HttpDelete("{id}")]
-[ActionName("DeleteItem")]
-public async Task<IActionResult> DeleteItem(string id)
-```
+## Error Handling
+All validation methods throw `ArgumentException` with descriptive messages that:
+- Clearly state what went wrong
+- Specify what characters/values are allowed
+- Provide guidance for correcting the input
 
-**DbRepos Delete Process**:
-```csharp
-public async Task<ResponseItemDto<IFriend>> DeleteFriendAsync(Guid id)
-{
-    // 1. Find the entity
-    var item = await _dbContext.Friends
-        .Where(i => i.FriendId == id)
-        .FirstOrDefaultAsync<FriendDbM>();
-
-    if (item == null) throw new ArgumentException($"Item {id} is not existing");
-
-    // 2. Remove from context
-    _dbContext.Friends.Remove(item);
-
-    // 3. Save changes
-    await _dbContext.SaveChangesAsync();
-
-    // 4. Return deleted item
-    return new ResponseItemDto<IFriend>() { Item = item };
-}
-```
-
-## Key Design Patterns and Features
-
-### 1. DTO Pattern for Create/Update (CU in CRUD)
-
-**Why DTOs?**
-- **Separation of Concerns**: Database models and API contracts are separate
-- **Security**: Only expose necessary fields for updates
-- **Flexibility**: Can accept different data structures than database models
-- **Navigation Property Management**: Handle relationships via IDs rather than full objects
-
-**DTO Construction from Domain Model**:
-```csharp
-public FriendCuDto(IFriend org)
-{
-    FriendId = org.FriendId;
-    FirstName = org.FirstName;
-    // ... scalar properties
-
-    // Convert navigation properties to IDs
-    AddressId = org?.Address?.AddressId;
-    PetsId = org.Pets?.Select(i => i.PetId).ToList();
-    QuotesId = org.Quotes?.Select(i => i.QuoteId).ToList();
-}
-```
-
-### 2. Navigation Property Management
-
-**ID-Based Relationships in DTOs**:
-- Single relationships use `Guid?` (nullable for optional relationships)
-- Multiple relationships use `List<Guid>` 
-- The repository layer converts these IDs back to entity references
-
-**Validation**:
-- Ensures referenced entities exist before creating relationships
-- Throws exceptions for invalid references
-- Handles null/empty ID collections gracefully
-
-### 3. Response DTOs
-
-**Consistent Response Format**:
-```csharp
-public class ResponseItemDto<T>
-{
-    public string ConnectionString { get; init; }  // Debug only
-    public T Item { get; init; }
-}
-
-public class ResponsePageDto<T>
-{
-    public string ConnectionString { get; init; }  // Debug only
-    public List<T> PageItems { get; init; }
-    public int DbItemsCount { get; init; }
-    public int PageNr { get; init; }
-    public int PageSize { get; init; }
-    public int PageCount => (int)Math.Ceiling((double)DbItemsCount / PageSize);
-}
-```
-
-### 4. Service Layer Pattern
-
-**Thin Service Layer**:
-- Currently acts as a pass-through to repositories
-- Designed for future business logic expansion
-- Maintains consistent interface contracts
-- Enables dependency injection and testability
-
-```csharp
-public class FriendsServiceDb : IFriendsService
-{
-    private readonly FriendsDbRepos _repo;
-    
-    // Simple 1:1 calls, but expandable for business logic
-    public Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) 
-        => _repo.ReadFriendsAsync(seeded, flat, filter, pageNumber, pageSize);
-}
-```
-
-## Advanced Features
-
-### 1. Performance Optimizations
-- **AsNoTracking()**: Used for read operations to improve performance
-- **Conditional Includes**: Load navigation properties only when needed
-- **Server-side Filtering**: Database-level filtering rather than in-memory
-
-### 2. Entity Framework Integration
-- **Unit of Work Pattern**: `SaveChangesAsync()` commits all changes atomically
-- **Change Tracking**: EF automatically tracks entity changes
-- **Navigation Property Loading**: Both lazy and eager loading supported
-
-### 3. Error Handling
-- Validation at multiple layers
-- Descriptive error messages
-- Proper HTTP status codes
-- Logging throughout the stack
-
-## Benefits of This Implementation
-
-1. **Separation of Concerns**: Clear boundaries between layers
-2. **Testability**: Each layer can be unit tested independently
-3. **Maintainability**: Changes in one layer don't affect others
-4. **Flexibility**: Easy to modify DTOs without changing database schema
-5. **Performance**: Optimized queries and minimal data transfer
-6. **Security**: DTOs prevent over-posting and expose only necessary data
-7. **Consistency**: Uniform patterns across all CRUD operations
-
-## Conclusion
-
-This implementation demonstrates a mature, production-ready approach to CRUD operations with:
-- Clean architectural separation
-- Proper use of DTOs for Create/Update operations
-- Sophisticated navigation property management
-- Performance optimizations
-- Comprehensive error handling
-
-The pattern is particularly strong in handling the complex Create and Update operations where navigation properties need to be managed through ID references, converted to proper Entity Framework relationships, and validated for data integrity.
+This approach ensures consistent error handling throughout the application and provides clear feedback to API consumers.

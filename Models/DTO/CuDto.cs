@@ -1,4 +1,6 @@
-﻿namespace Models.DTO;
+﻿using System.Text.RegularExpressions;
+
+namespace Models.DTO;
 
 //DTO is a DataTransferObject, can be instanstiated by the controller logic
 //and represents a, fully instantiable, subset of the Database models
@@ -35,6 +37,34 @@ public class FriendCuDto
         PetsId = org.Pets?.Select(i => i.PetId).ToList();
         QuotesId = org.Quotes?.Select(i => i.QuoteId).ToList();
     }
+    public void EnsureValidity()
+    {
+        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        if (!string.IsNullOrEmpty(FirstName) && !Regex.IsMatch(FirstName, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("FirstName can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (!string.IsNullOrEmpty(LastName) && !Regex.IsMatch(LastName, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("LastName can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (!string.IsNullOrEmpty(Email) && !Regex.IsMatch(Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            throw new ArgumentException("Email has to be a valid email address.");
+        }
+        if (Birthday.HasValue)
+        {
+            // Use DateTime.Parse to validate the date by converting back to string and parsing
+            var dateString = Birthday.Value.ToString("yyyy-MM-dd");
+            var parsedDate = DateTime.Parse(dateString);
+                
+            // Additional checks for reasonable birthday range
+            if (parsedDate != Birthday.Value || parsedDate.Year < 1900 || parsedDate > DateTime.Now)
+            {
+                throw new ArgumentException("Birthday must be a valid date in the past (after 1900) or null.");
+            }
+        }
+    }
 }
 
 public class AddressCuDto
@@ -59,6 +89,24 @@ public class AddressCuDto
 
         FriendsId = org.Friends?.Select(i => i.FriendId).ToList();
     }
+
+    public void EnsureValidity()
+    {
+        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        if (!string.IsNullOrEmpty(StreetAddress) && !Regex.IsMatch(StreetAddress, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("StreetAddress can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (!string.IsNullOrEmpty(City) && !Regex.IsMatch(City, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("City can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (!string.IsNullOrEmpty(Country) && !Regex.IsMatch(Country, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("Country can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (ZipCode <= 0) throw new ArgumentException("ZipCode has to be larger than zero");
+    }
 }
 
 public class PetCuDto
@@ -82,6 +130,17 @@ public class PetCuDto
         Name = org.Name;
         Mood = org.Mood;
     }
+
+    public void EnsureValidity()
+    {
+        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        if (!string.IsNullOrEmpty(Name) && !Regex.IsMatch(Name, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("Name can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+        if (!Enum.IsDefined(typeof(AnimalKind), Kind)) throw new ArgumentException("Kind has to be set to a valid value");
+        if (!Enum.IsDefined(typeof(AnimalMood), Mood)) throw new ArgumentException("Mood has to be set to a valid value");
+    }
 }
 
 public class QuoteCuDto
@@ -103,4 +162,19 @@ public class QuoteCuDto
 
         FriendsId = org.Friends?.Select(i => i.FriendId).ToList();
     }
+
+
+    public void EnsureValidity()
+    {
+        // RegEx check to ensure filter only contains a-z, 0-9, spaces, and punctuation (.,!?')
+        if (!string.IsNullOrEmpty(Quote) && !Regex.IsMatch(Quote, @"^[a-zA-Z0-9\s.,!?']*$"))
+        {
+            throw new ArgumentException("Quote can only contain letters (a-z), numbers (0-9), spaces, and punctuation (.,!?').");
+        }
+        if (!string.IsNullOrEmpty(Author) && !Regex.IsMatch(Author, @"^[a-zA-Z0-9\s]*$"))
+        {
+            throw new ArgumentException("Author can only contain letters (a-z), numbers (0-9), and spaces.");
+        }
+    }
 }
+

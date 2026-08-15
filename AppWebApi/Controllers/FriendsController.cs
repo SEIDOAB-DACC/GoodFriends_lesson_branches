@@ -5,6 +5,7 @@ using Models;
 using Models.DTO;
 using Services;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.RegularExpressions;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -31,6 +32,12 @@ namespace AppWebApi.Controllers
                 int pageNrArg = int.Parse(pageNr);
                 int pageSizeArg = int.Parse(pageSize);
 
+                // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+                if (!string.IsNullOrEmpty(filter) && !Regex.IsMatch(filter, @"^[a-zA-Z0-9\s]*$"))
+                {
+                    throw new ArgumentException("Filter can only contain letters (a-z), numbers (0-9), and spaces.");
+                }
+                
                 _logger.LogInformation($"{nameof(Read)}: {nameof(seededArg)}: {seededArg}, {nameof(flatArg)}: {flatArg}, " +
                     $"{nameof(pageNrArg)}: {pageNrArg}, {nameof(pageSizeArg)}: {pageSizeArg}");
 
@@ -139,10 +146,10 @@ namespace AppWebApi.Controllers
         {
             try
             {
-                var idArg = Guid.Parse(id);
+                item.EnsureValidity();
 
+                var idArg = Guid.Parse(id);
                 _logger.LogInformation($"{nameof(UpdateItem)}: {nameof(idArg)}: {idArg}");
-                
                 if (item.FriendId != idArg) throw new ArgumentException("Id mismatch");
 
                 var _item = await _service.UpdateFriendAsync(item);
@@ -167,7 +174,8 @@ namespace AppWebApi.Controllers
         {
             try
             {
-                _logger.LogInformation($"{nameof(CreateItem)}:");
+               item.EnsureValidity();
+               _logger.LogInformation($"{nameof(CreateItem)}:");
                 
                 var _item = await _service.CreateFriendAsync(item);
                 _logger.LogInformation($"item {_item.Item.FriendId} created");

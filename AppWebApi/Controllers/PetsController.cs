@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -33,7 +34,13 @@ namespace AppWebApi.Controllers
                 int pageNrArg = int.Parse(pageNr);
                 int pageSizeArg = int.Parse(pageSize);
 
-                _logger.LogInformation($"{nameof(Read)}: {nameof(seededArg)}: {seededArg}, {nameof(flatArg)}: {flatArg}, " +
+                // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+                if (!string.IsNullOrEmpty(filter) && !Regex.IsMatch(filter, @"^[a-zA-Z0-9\s]*$"))
+                {
+                    throw new ArgumentException("Filter can only contain letters (a-z), numbers (0-9), and spaces.");
+                }
+ 
+                 _logger.LogInformation($"{nameof(Read)}: {nameof(seededArg)}: {seededArg}, {nameof(flatArg)}: {flatArg}, " +
                     $"{nameof(pageNrArg)}: {pageNrArg}, {nameof(pageSizeArg)}: {pageSizeArg}");
                 
                 var resp = await _service.ReadPetsAsync(seededArg, flatArg, filter?.Trim().ToLower(), pageNrArg, pageSizeArg);     
@@ -140,10 +147,10 @@ namespace AppWebApi.Controllers
         {
             try
             {
-                var idArg = Guid.Parse(id);
+                item.EnsureValidity();
 
+                var idArg = Guid.Parse(id);
                 _logger.LogInformation($"{nameof(UpdateItem)}: {nameof(idArg)}: {idArg}");
-                
                 if (item.PetId != idArg) throw new ArgumentException("Id mismatch");
 
                 var model = await _service.UpdatePetAsync(item);
@@ -168,6 +175,7 @@ namespace AppWebApi.Controllers
         {
             try
             {
+                item.EnsureValidity();
                 _logger.LogInformation($"{nameof(CreateItem)}:");
                 
                 var model = await _service.CreatePetAsync(item);

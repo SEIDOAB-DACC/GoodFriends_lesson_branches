@@ -45,9 +45,25 @@ namespace AppWebApi.Controllers
                 _logger.LogError($"{nameof(Environment)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-         }
+        }
+        
+        //GET: api/admin/version
+        [HttpGet()]
+        [ActionName("Version")]
+        [ProducesResponseType(typeof(VersionOptions), 200)]
+        public IActionResult Version()
+        {
+            try
+            {
+                return Ok(_versionOptions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving version information");
+                return BadRequest(ex.Message);
+            }
+        }
 
-#if DEBUG
         //GET: api/admin/seed?count={count}
         [HttpGet()]
         [ActionName("Seed")]
@@ -91,23 +107,7 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
-#endif
-        [HttpGet()]
-        [ActionName("Version")]
-        [ProducesResponseType(typeof(VersionOptions), 200)]
-        public IActionResult Version()
-        {
-            try
-            {
-                _logger.LogInformation($"{nameof(Version)}:\n{JsonConvert.SerializeObject(_versionOptions)}");
-                return Ok(_versionOptions);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving version information");
-                return BadRequest(ex.Message);
-            }
-        }
+
         //GET: api/admin/log
         [HttpGet()]
         [ActionName("Log")]
@@ -143,6 +143,7 @@ namespace AppWebApi.Controllers
             _dbConnections = dbConnections;
 
             _service = service;
+
         }
     }
 }

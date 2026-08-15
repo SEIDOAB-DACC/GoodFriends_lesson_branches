@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 
 using Models;
 using Models.DTO;
@@ -31,6 +32,12 @@ namespace AppWebApi.Controllers
                 bool flatArg = bool.Parse(flat);
                 int pageNrArg = int.Parse(pageNr);
                 int pageSizeArg = int.Parse(pageSize);
+     
+                // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+                if (!string.IsNullOrEmpty(filter) && !Regex.IsMatch(filter, @"^[a-zA-Z0-9\s]*$"))
+                {
+                    throw new ArgumentException("Filter can only contain letters (a-z), numbers (0-9), and spaces.");
+                }
      
                 _logger.LogInformation($"{nameof(Read)}: {nameof(seededArg)}: {seededArg}, {nameof(flatArg)}: {flatArg}, " +
                     $"{nameof(pageNrArg)}: {pageNrArg}, {nameof(pageSizeArg)}: {pageSizeArg}");
@@ -141,10 +148,10 @@ namespace AppWebApi.Controllers
         {
             try
             {
-                var idArg = Guid.Parse(id);
+                item.EnsureValidity();
 
+                var idArg = Guid.Parse(id);
                 _logger.LogInformation($"{nameof(UpdateItem)}: {nameof(idArg)}: {idArg}");
-                
                 if (item.AddressId != idArg) throw new ArgumentException("Id mismatch");
 
                 var model = await _service.UpdateAddressAsync(item);
@@ -169,6 +176,8 @@ namespace AppWebApi.Controllers
         {
             try
             {
+                item.EnsureValidity();
+
                 _logger.LogInformation($"{nameof(CreateItem)}:");
                
                 var model = await _service.CreateAddressAsync(item);

@@ -55,7 +55,7 @@ sealed public class FriendDbM : Friend, ISeed<FriendDbM>
         FirstName = org.FirstName;
         LastName = org.LastName;
         Birthday = org.Birthday;
-
+        Email = org.Email;
         return this;
     }
     #endregion
