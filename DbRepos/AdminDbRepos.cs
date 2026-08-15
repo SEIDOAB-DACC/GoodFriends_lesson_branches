@@ -1,6 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
+using MySqlConnector;
+using Npgsql;
 
 using Seido.Utilities.SeedGenerator;
 using Models.DTO;
@@ -26,24 +30,14 @@ public class AdminDbRepos
 
     public async Task<ResponseItemDto<GstUsrInfoAllDto>> InfoAsync() => await DbInfo();
 
+
     private async Task<ResponseItemDto<GstUsrInfoAllDto>> DbInfo()
     {
         var info = new GstUsrInfoAllDto();
-        info.Db = new GstUsrInfoDbDto
-        {
-            NrSeededFriends = await _dbContext.Friends.Where(f => f.Seeded).CountAsync(),
-            NrUnseededFriends = await _dbContext.Friends.Where(f => !f.Seeded).CountAsync(),
-            NrFriendsWithAddress = await _dbContext.Friends.Where(f => f.AddressId != null).CountAsync(),
-
-            NrSeededAddresses = await _dbContext.Addresses.Where(f => f.Seeded).CountAsync(),
-            NrUnseededAddresses = await _dbContext.Addresses.Where(f => !f.Seeded).CountAsync(),
-
-            NrSeededPets = await _dbContext.Pets.Where(f => f.Seeded).CountAsync(),
-            NrUnseededPets = await _dbContext.Pets.Where(f => !f.Seeded).CountAsync(),
-
-            NrSeededQuotes = await _dbContext.Quotes.Where(f => f.Seeded).CountAsync(),
-            NrUnseededQuotes = await _dbContext.Quotes.Where(f => !f.Seeded).CountAsync(),
-        };
+        info.Db = await _dbContext.InfoDbView.FirstAsync();
+        info.Friends = await _dbContext.InfoFriendsView.ToListAsync();
+        info.Pets = await _dbContext.InfoPetsView.ToListAsync();
+        info.Quotes = await _dbContext.InfoQuotesView.ToListAsync();
 
         return new ResponseItemDto<GstUsrInfoAllDto>
         {
@@ -84,43 +78,106 @@ public class AdminDbRepos
         _dbContext.Friends.AddRange(friends);
         #endregion
 
-        LogChangeTracker();
         await _dbContext.SaveChangesAsync();
-        LogChangeTracker();
-
         return await DbInfo();
     }
 
     public async Task<ResponseItemDto<GstUsrInfoAllDto>> RemoveSeedAsync(bool seeded)
     {
-        _dbContext.Quotes.RemoveRange(_dbContext.Quotes.Where(f => f.Seeded == seeded));
+        // Create parameters based on database provider
+        var connection = _dbContext.Database.GetDbConnection();
+        using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
 
-        _dbContext.Pets.RemoveRange(_dbContext.Pets.Where(f => f.Seeded == seeded)); //not needed when DeleteBehavior.Cascade in MainDbContexts OnModelCreating
-        _dbContext.Friends.RemoveRange(_dbContext.Friends.Where(f => f.Seeded == seeded));
-        _dbContext.Addresses.RemoveRange(_dbContext.Addresses.Where(f => f.Seeded == seeded));
+        List<DbParameter> parameters;
+        if (connection is MySqlConnection)
+        {
+            command.CommandText = "supusr_spDeleteAll";
+            parameters = new List<DbParameter>
+            {
+                new MySqlParameter("seededParam", seeded),
+                new MySqlParameter("nrFriendsAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output },
+                new MySqlParameter("nrAddressesAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output },
+                new MySqlParameter("nrPetsAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output },
+                new MySqlParameter("nrQuotesAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output }
+            };
+        }
+        else if (connection is NpgsqlConnection)
+        {
+            // PostgreSQL parameters - call as function returning table
+            command.CommandText = "SELECT nrFriendsAffected, nrAddressesAffected, nrPetsAffected, nrQuotesAffected FROM supusr.\"spDeleteAll\"(@seededParam)";
+            command.CommandType = CommandType.Text;
+            parameters =
+            [
+                new NpgsqlParameter("seededParam", seeded),
+                new NpgsqlParameter("nrFriendsAffected", NpgsqlTypes.NpgsqlDbType.Integer) { Direction = ParameterDirection.Output },
+                new NpgsqlParameter("nrAddressesAffected", NpgsqlTypes.NpgsqlDbType.Integer) { Direction = ParameterDirection.Output },
+                new NpgsqlParameter("nrPetsAffected", NpgsqlTypes.NpgsqlDbType.Integer) { Direction = ParameterDirection.Output },
+                new NpgsqlParameter("nrQuotesAffected", NpgsqlTypes.NpgsqlDbType.Integer) { Direction = ParameterDirection.Output }
+            ];
+        }
+        else
+        {
+            // SQL Server parameters (default)
+            command.CommandText = "supusr.spDeleteAll";
+            parameters = new List<DbParameter>
+            {
+                new SqlParameter("seededParam", seeded),
+                new SqlParameter("nrFriendsAffected", SqlDbType.Int) { Direction = ParameterDirection.Output },
+                new SqlParameter("nrAddressesAffected", SqlDbType.Int) { Direction = ParameterDirection.Output },
+                new SqlParameter("nrPetsAffected", SqlDbType.Int) { Direction = ParameterDirection.Output },
+                new SqlParameter("nrQuotesAffected", SqlDbType.Int) { Direction = ParameterDirection.Output }
+            };
+        }
 
-        LogChangeTracker();
-        await _dbContext.SaveChangesAsync();
-        LogChangeTracker();
+        command.Parameters.AddRange(parameters.ToArray());
+
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync();
+
+        if (connection is NpgsqlConnection)
+        {
+            // in postgresql, execute a procedure (a function) cannot return a dataset and have output parameters
+            // therefore I execute the command without expecting a result set
+            await command.ExecuteScalarAsync();
+        }
+        else
+        {
+            // Execute the stored procedure and get the result set
+            using var reader = await command.ExecuteReaderAsync();
+
+            // map reader result into GstUsrInfoDbDto result_set
+            GstUsrInfoDbDto result_set = null;
+            if (reader.HasRows)
+            {
+                // Read the first result set which should be InfoDbView
+                await reader.ReadAsync();
+
+                result_set = new GstUsrInfoDbDto
+                {
+                    // Populate properties from the reader
+                    NrSeededFriends = Convert.ToInt32(reader["NrSeededFriends"]),
+                    NrUnseededFriends = Convert.ToInt32(reader["NrUnseededFriends"]),
+                    NrFriendsWithAddress = Convert.ToInt32(reader["NrFriendsWithAddress"]),
+                    NrSeededAddresses = Convert.ToInt32(reader["NrSeededAddresses"]),
+                    NrUnseededAddresses = Convert.ToInt32(reader["NrUnseededAddresses"]),
+                    NrSeededPets = Convert.ToInt32(reader["NrSeededPets"]),
+                    NrUnseededPets = Convert.ToInt32(reader["NrUnseededPets"]),
+                    NrSeededQuotes = Convert.ToInt32(reader["NrSeededQuotes"]),
+                    NrUnseededQuotes = Convert.ToInt32(reader["NrUnseededQuotes"])
+                };
+            }
+            await reader.CloseAsync();
+            // result_set can now be accessed - not used in this example
+        }
+
+
+        // Output parameters can now be accessed - not used in this example
+        int nrFriends = (int)parameters.First(p => p.ParameterName == "nrFriendsAffected").Value;
+        int nrAddresses = (int)parameters.First(p => p.ParameterName == "nrAddressesAffected").Value;
+        int nrPets = (int)parameters.First(p => p.ParameterName == "nrPetsAffected").Value;
+        int nrQuotes = (int)parameters.First(p => p.ParameterName == "nrQuotesAffected").Value;
 
         return await DbInfo();
-    }
-
-    // This method is for debugging purposes only and to demonstrate the ChangeTracker
-    private void LogChangeTracker()
-    {
-        foreach (var e in _dbContext.ChangeTracker.Entries())
-        {
-            var id = e.Entity switch
-            {
-                QuoteDbM quoteDbM => quoteDbM.QuoteId,
-                FriendDbM friendDbM => friendDbM.FriendId,
-                AddressDbM addressDbM => addressDbM.AddressId,
-                PetDbM petDbM => petDbM.PetId,
-                _ => Guid.Empty
-            };
-            
-            _logger.LogInformation($"{nameof(LogChangeTracker)}: {e.Entity.GetType().Name}: {id} - {e.State}");
-        }
     }
 }

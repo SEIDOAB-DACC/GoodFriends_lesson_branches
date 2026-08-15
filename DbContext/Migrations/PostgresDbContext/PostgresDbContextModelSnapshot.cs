@@ -160,6 +160,85 @@ namespace DbContext.Migrations.PostgresDbContext
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
+            modelBuilder.Entity("Models.DTO.GstUsrInfoDbDto", b =>
+                {
+                    b.Property<int>("NrFriendsWithAddress")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrSeededAddresses")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrSeededFriends")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrSeededPets")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrSeededQuotes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrUnseededAddresses")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrUnseededFriends")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrUnseededPets")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NrUnseededQuotes")
+                        .HasColumnType("integer");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vwInfoDb", "gstusr");
+                });
+
+            modelBuilder.Entity("Models.DTO.GstUsrInfoFriendsDto", b =>
+                {
+                    b.Property<string>("City")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("NrFriends")
+                        .HasColumnType("integer");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vwInfoFriends", "gstusr");
+                });
+
+            modelBuilder.Entity("Models.DTO.GstUsrInfoPetsDto", b =>
+                {
+                    b.Property<string>("City")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("NrPets")
+                        .HasColumnType("integer");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vwInfoPets", "gstusr");
+                });
+
+            modelBuilder.Entity("Models.DTO.GstUsrInfoQuotesDto", b =>
+                {
+                    b.Property<string>("Author")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("NrQuotes")
+                        .HasColumnType("integer");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vwInfoQuotes", "gstusr");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.HasOne("DbModels.AddressDbM", "AddressDbM")

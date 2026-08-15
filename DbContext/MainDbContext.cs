@@ -35,28 +35,25 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
     { }
     #endregion
 
+    #region model the Views
+    public DbSet<GstUsrInfoDbDto> InfoDbView { get; set; }
+    public DbSet<GstUsrInfoFriendsDto> InfoFriendsView { get; set; }
+    public DbSet<GstUsrInfoPetsDto> InfoPetsView { get; set; }
+    public DbSet<GstUsrInfoQuotesDto> InfoQuotesView { get; set; }
+    #endregion
+
     //Here we can modify the migration building
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
+        #region model the Views
+        modelBuilder.Entity<GstUsrInfoDbDto>().ToView("vwInfoDb", "gstusr").HasNoKey();
+        modelBuilder.Entity<GstUsrInfoFriendsDto>().ToView("vwInfoFriends", "gstusr").HasNoKey();
+        modelBuilder.Entity<GstUsrInfoPetsDto>().ToView("vwInfoPets", "gstusr").HasNoKey();
+        modelBuilder.Entity<GstUsrInfoQuotesDto>().ToView("vwInfoQuotes", "gstusr").HasNoKey();        
+        #endregion
+
         #region override modelbuilder
-        // This is where we can modify the model builder to add custom configurations
-/*
-        modelBuilder.Entity("DbModels.PetDbM", b =>
-        {
-            b.HasOne("DbModels.FriendDbM", "FriendDbM")
-                .WithMany("PetsDbM")
-                .HasForeignKey("FriendId")
-
-                // Enforces Cascade Delete is default due to PetDbM - public Guid FriendId { get; set; } -
-                .OnDelete(DeleteBehavior.Cascade);
-
-                // Try DeleteBehavior.Cascade  SetNull
-                // PetDbM - public Guid? FriendId { get; set; } -
-                //.OnDelete(DeleteBehavior.SetNull);
-
-            b.Navigation("FriendDbM");
-        });
-*/        
         modelBuilder.Entity("DbModels.FriendDbM", b =>
         {
             b.HasOne("DbModels.AddressDbM", "AddressDbM")

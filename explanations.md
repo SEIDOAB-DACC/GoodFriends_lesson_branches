@@ -1,207 +1,401 @@
-# RegEx Validation Documentation
+# SQL Database Scripts and Cross-Database Compatibility Guide
 
-This document explains all the Regular Expression (RegEx) checks and validation patterns used in the GoodFriends application for input validation and data integrity.
+This document provides a comprehensive explanation of the SQL scripts in the `DbContext/SqlScripts` directory, database schema handling differences across SQL Server, MySQL, and PostgreSQL, and how views and stored procedures are integrated into the .NET application.
 
 ## Table of Contents
-1. [Controller Validations](#controller-validations)
-2. [DTO EnsureValidity Methods](#dto-ensurevalidity-methods)
-3. [RegEx Pattern Explanations](#regex-pattern-explanations)
-4. [Best Practices](#best-practices)
 
-## Controller Validations
+1. [SQL Scripts Overview](#sql-scripts-overview)
+2. [Database Schema Handling Differences](#database-schema-handling-differences)
+3. [SQL Views Integration](#sql-views-integration)
+4. [Stored Procedures Integration](#stored-procedures-integration)
+5. [Cross-Database Implementation Patterns](#cross-database-implementation-patterns)
 
-### AddressesController.Read Method
-**Location:** `AppWebApi/Controllers/AddressesController.cs` (Line ~37)
+## SQL Scripts Overview
 
+The project contains SQL scripts organized by database provider in the `DbContext/SqlScripts` directory:
+
+```
+SqlScripts/
+├── sqlserver/
+│   ├── initDatabase.sql
+│   └── clearDatabase.sql
+├── mysql/
+│   ├── initDatabase.sql
+│   └── clearDatabase.sql
+└── postgres/
+    ├── initDatabase.sql
+    └── clearDatabase.sql
+```
+
+### Common Script Purpose
+
+Each database provider has two main scripts:
+- **`initDatabase.sql`**: Creates database schemas, views, and stored procedures
+- **`clearDatabase.sql`**: Removes all database objects (cleanup script)
+
+### Key Database Objects Created
+
+All database versions create the following objects:
+
+1. **Schemas**: Logical namespaces for organizing database objects
+2. **Views**: Read-only virtual tables for reporting and aggregated data
+3. **Stored Procedures/Functions**: Executable database routines for data manipulation
+
+## Database Schema Handling Differences
+
+Schema handling varies significantly across database platforms:
+
+### SQL Server
+```sql
+-- SQL Server uses true schemas as namespaces
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'gstusr')
+    EXEC('CREATE SCHEMA gstusr');
+GO
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'usr')
+    EXEC('CREATE SCHEMA usr');
+GO
+
+-- Views are created with schema prefix
+CREATE OR ALTER VIEW gstusr.vwInfoDb AS ...
+
+-- Stored procedures use schema prefix
+CREATE OR ALTER PROC supusr.spDeleteAll ...
+```
+
+**SQL Server Schema Features:**
+- True schema namespaces supported
+- Object names include schema prefix (e.g., `gstusr.vwInfoDb`)
+- Schema-based security and permissions
+- Multiple schemas per database
+
+### MySQL/MariaDB
+```sql
+-- MySQL doesn't support schemas as namespaces
+-- Uses naming convention with underscores instead
+-- Schema = Database in MySQL terminology
+
+-- Views use underscore naming convention
+CREATE OR REPLACE VIEW gstusr_vwInfoDb AS ...
+
+-- Procedures use underscore naming convention  
+CREATE OR REPLACE PROCEDURE supusr_spDeleteAll(...) ...
+```
+
+**MySQL Schema Limitations:**
+- No true schema support (schema = database)
+- Uses naming conventions with underscores as schema simulation
+- Object names: `gstusr_vwInfoDb` instead of `gstusr.vwInfoDb`
+- Single "schema" (database) per connection
+
+### PostgreSQL
+```sql
+-- PostgreSQL has robust schema support
+CREATE SCHEMA IF NOT EXISTS gstusr;
+CREATE SCHEMA IF NOT EXISTS usr;
+CREATE SCHEMA IF NOT EXISTS supusr;
+
+-- Views use quoted identifiers and schema prefix
+CREATE OR REPLACE VIEW gstusr."vwInfoDb" AS ...
+
+-- Functions (not procedures) with schema prefix
+CREATE OR REPLACE FUNCTION supusr."spDeleteAll"(...) 
+RETURNS RECORD ...
+```
+
+**PostgreSQL Schema Features:**
+- Full schema namespace support
+- Case-sensitive identifiers require quotes
+- Uses functions instead of stored procedures
+- Advanced schema-based security model
+
+## SQL Views Integration
+
+Views provide read-only access to aggregated data and are integrated through Entity Framework Core.
+
+### View Definitions
+
+All databases create four main views:
+
+#### 1. Database Info View (`vwInfoDb`)
+```sql
+-- Provides overview of database content
+SELECT 
+    (SELECT COUNT(*) FROM supusr.Friends WHERE Seeded = 1) as NrSeededFriends,
+    (SELECT COUNT(*) FROM supusr.Friends WHERE Seeded = 0) as NrUnseededFriends,
+    -- ... more counts for addresses, pets, quotes
+```
+
+#### 2. Friends Info View (`vwInfoFriends`)
+```sql
+-- Groups friends by country and city
+SELECT a.Country, a.City, COUNT(*) as NrFriends 
+FROM supusr.Friends f
+INNER JOIN supusr.Addresses a ON f.AddressId = a.AddressId
+GROUP BY a.Country, a.City WITH ROLLUP;
+```
+
+#### 3. Pets Info View (`vwInfoPets`)
+```sql
+-- Groups pets by location
+SELECT a.Country, a.City, COUNT(p.PetId) as NrPets 
+FROM supusr.Friends f
+INNER JOIN supusr.Addresses a ON f.AddressId = a.AddressId
+INNER JOIN supusr.Pets p ON p.FriendId = f.FriendId
+GROUP BY a.Country, a.City WITH ROLLUP;
+```
+
+#### 4. Quotes Info View (`vwInfoQuotes`)
+```sql
+-- Groups quotes by author
+SELECT Author, COUNT(QuoteText) as NrQuotes 
+FROM supusr.Quotes 
+GROUP BY Author;
+```
+
+### EF Core View Integration
+
+Views are integrated in `MainDbContext.cs` through:
+
+#### 1. DbSet Properties
 ```csharp
-// RegEx check to ensure filter only contains a-z, 0-9, and spaces
-if (!string.IsNullOrEmpty(filter) && !Regex.IsMatch(filter, @"^[a-zA-Z0-9\s]*$"))
+#region model the Views
+public DbSet<GstUsrInfoDbDto> InfoDbView { get; set; }
+public DbSet<GstUsrInfoFriendsDto> InfoFriendsView { get; set; }
+public DbSet<GstUsrInfoPetsDto> InfoPetsView { get; set; }
+public DbSet<GstUsrInfoQuotesDto> InfoQuotesView { get; set; }
+#endregion
+```
+
+#### 2. Model Configuration
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
-    throw new ArgumentException("Filter can only contain letters (a-z), numbers (0-9), and spaces.");
+    #region model the Views
+    modelBuilder.Entity<GstUsrInfoDbDto>().ToView("vwInfoDb", "gstusr").HasNoKey();
+    modelBuilder.Entity<GstUsrInfoFriendsDto>().ToView("vwInfoFriends", "gstusr").HasNoKey();
+    modelBuilder.Entity<GstUsrInfoPetsDto>().ToView("vwInfoPets", "gstusr").HasNoKey();
+    modelBuilder.Entity<GstUsrInfoQuotesDto>().ToView("vwInfoQuotes", "gstusr").HasNoKey();        
+    #endregion
 }
 ```
 
-**Purpose:** Validates the filter parameter in the Read API endpoint to prevent injection attacks and ensure only safe characters are used for filtering.
-
-**Pattern:** `^[a-zA-Z0-9\s]*$`
-- **Allowed Characters:** Letters (a-z, A-Z), numbers (0-9), and spaces
-- **Security:** Prevents SQL injection and other malicious input
-
-## DTO EnsureValidity Methods
-
-The `EnsureValidity()` methods in various DTO classes provide comprehensive input validation before data processing.
-
-### FriendCuDto Validation
-**Location:** `Models/DTO/CuDto.cs` (Line ~40)
-
-#### FirstName and LastName Validation
+#### 3. DTO Mapping
+Views map to C# DTOs in `Models/DTO/GstUsrDto.cs`:
 ```csharp
-if (!string.IsNullOrEmpty(FirstName) && !Regex.IsMatch(FirstName, @"^[a-zA-Z0-9\s]*$"))
+public class GstUsrInfoDbDto
 {
-    throw new ArgumentException("FirstName can only contain letters (a-z), numbers (0-9), and spaces.");
+    public int NrSeededFriends { get; set; } = 0;
+    public int NrUnseededFriends { get; set; } = 0;
+    public int NrFriendsWithAddress { get; set; } = 0;
+    // ... other properties
 }
 ```
 
-**Pattern:** `^[a-zA-Z0-9\s]*$`
-- **Purpose:** Ensures names contain only alphanumeric characters and spaces
-- **Rationale:** Allows for names with numbers (e.g., "John Jr. 3rd") while preventing special characters that could cause issues
-
-#### Email Validation
+#### 4. Repository Usage
+Views are accessed in `AdminDbRepos.cs`:
 ```csharp
-if (!string.IsNullOrEmpty(Email) && !Regex.IsMatch(Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+private async Task<ResponseItemDto<GstUsrInfoAllDto>> DbInfo()
 {
-    throw new ArgumentException("Email has to be a valid email address.");
+    var info = new GstUsrInfoAllDto();
+    info.Db = await _dbContext.InfoDbView.FirstAsync();
+    info.Friends = await _dbContext.InfoFriendsView.ToListAsync();
+    info.Pets = await _dbContext.InfoPetsView.ToListAsync();
+    info.Quotes = await _dbContext.InfoQuotesView.ToListAsync();
+    // ...
 }
 ```
 
-**Pattern:** `^[^@\s]+@[^@\s]+\.[^@\s]+$`
-- **Purpose:** Validates basic email format
-- **Breakdown:**
-  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (local part)
-  - `@` - Literal @ symbol
-  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (domain name)
-  - `\.` - Literal dot
-  - `[^@\s]+` - One or more characters that are NOT @ or whitespace (top-level domain)
+## Stored Procedures Integration
 
-#### Birthday Validation
-```csharp
-if (Birthday.HasValue)
-{
-    var dateString = Birthday.Value.ToString("yyyy-MM-dd");
-    var parsedDate = DateTime.Parse(dateString);
+The application uses stored procedures/functions for complex data operations, specifically the `spDeleteAll` routine.
+
+### Cross-Database Procedure Definitions
+
+#### SQL Server Stored Procedure
+```sql
+CREATE OR ALTER PROC supusr.spDeleteAll
+    @seededParam BIT = 1,
+    @nrFriendsAffected INT OUTPUT,
+    @nrAddressesAffected INT OUTPUT,
+    @nrPetsAffected INT OUTPUT,
+    @nrQuotesAffected INT OUTPUT
+AS
+    -- Count affected records
+    SELECT @nrFriendsAffected = COUNT(*) FROM supusr.Friends WHERE Seeded = @seededParam;
+    -- ... similar for other tables
     
-    if (parsedDate != Birthday.Value || parsedDate.Year < 1900 || parsedDate > DateTime.Now)
+    -- Delete records
+    DELETE FROM supusr.Friends WHERE Seeded = @seededParam;
+    -- ... delete from other tables
+    
+    -- Return result set
+    SELECT * FROM gstusr.vwInfoDb;
+GO
+```
+
+#### MySQL Stored Procedure
+```sql
+CREATE OR REPLACE PROCEDURE supusr_spDeleteAll(
+    IN seededParam BOOLEAN,
+    OUT nrFriendsAffected INT,
+    OUT nrAddressesAffected INT,
+    OUT nrPetsAffected INT,
+    OUT nrQuotesAffected INT
+)
+BEGIN
+    -- Count and delete logic similar to SQL Server
+    -- but with MySQL syntax
+END;
+```
+
+#### PostgreSQL Function
+```sql
+CREATE OR REPLACE FUNCTION supusr."spDeleteAll"(
+    seededParam BOOLEAN DEFAULT true,
+    OUT nrFriendsAffected INTEGER,
+    OUT nrAddressesAffected INTEGER,
+    OUT nrPetsAffected INTEGER,
+    OUT nrQuotesAffected INTEGER
+)
+RETURNS RECORD
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Function body with PostgreSQL-specific syntax
+END;
+$$;
+```
+
+### C# Stored Procedure Integration
+
+The `AdminDbRepos.cs` class demonstrates cross-database stored procedure execution:
+
+#### 1. Database Provider Detection
+```csharp
+var connection = _dbContext.Database.GetDbConnection();
+using var command = connection.CreateCommand();
+command.CommandType = CommandType.StoredProcedure;
+
+List<DbParameter> parameters;
+if (connection is MySqlConnection)
+{
+    // MySQL-specific parameter setup
+    command.CommandText = "supusr_spDeleteAll";
+    parameters = new List<DbParameter>
     {
-        throw new ArgumentException("Birthday must be a valid date in the past (after 1900) or null.");
+        new MySqlParameter("seededParam", seeded),
+        new MySqlParameter("nrFriendsAffected", MySqlDbType.Int32) { Direction = ParameterDirection.Output },
+        // ... other parameters
+    };
+}
+else if (connection is NpgsqlConnection)
+{
+    // PostgreSQL function call
+    command.CommandText = "SELECT nrFriendsAffected, nrAddressesAffected, nrPetsAffected, nrQuotesAffected FROM supusr.\"spDeleteAll\"(@seededParam)";
+    command.CommandType = CommandType.Text;
+    // ... PostgreSQL parameters
+}
+else
+{
+    // SQL Server (default)
+    command.CommandText = "supusr.spDeleteAll";
+    parameters = new List<DbParameter>
+    {
+        new SqlParameter("seededParam", seeded),
+        new SqlParameter("nrFriendsAffected", SqlDbType.Int) { Direction = ParameterDirection.Output },
+        // ... other parameters
+    };
+}
+```
+
+#### 2. Parameter Handling
+```csharp
+command.Parameters.AddRange(parameters.ToArray());
+
+if (connection.State != ConnectionState.Open)
+    await connection.OpenAsync();
+
+if (connection is NpgsqlConnection)
+{
+    // PostgreSQL function execution
+    await command.ExecuteScalarAsync();
+}
+else
+{
+    // SQL Server/MySQL procedure execution with result set
+    using var reader = await command.ExecuteReaderAsync();
+    
+    if (reader.HasRows)
+    {
+        await reader.ReadAsync();
+        var result_set = new GstUsrInfoDbDto
+        {
+            NrSeededFriends = Convert.ToInt32(reader["NrSeededFriends"]),
+            // ... map other fields
+        };
     }
 }
 ```
 
-**Purpose:** Ensures Birthday is a valid date using DateTime.Parse validation
-- **Validates:** Date exists and is parseable
-- **Range Check:** Must be after 1900 and not in the future
-- **Nullable:** Allows null values
-
-### AddressCuDto Validation
-**Location:** `Models/DTO/CuDto.cs` (Line ~93)
-
-#### Address Fields Validation
+#### 3. Output Parameter Access
 ```csharp
-if (!string.IsNullOrEmpty(StreetAddress) && !Regex.IsMatch(StreetAddress, @"^[a-zA-Z0-9\s]*$"))
+// Extract output parameter values
+int nrFriends = (int)parameters.First(p => p.ParameterName == "nrFriendsAffected").Value;
+int nrAddresses = (int)parameters.First(p => p.ParameterName == "nrAddressesAffected").Value;
+// ... other output parameters
+```
+
+## Cross-Database Implementation Patterns
+
+### 1. Schema Abstraction
+The application handles schema differences through:
+- **SQL Server**: True schemas (`gstusr.vwInfoDb`)
+- **MySQL**: Underscore naming (`gstusr_vwInfoDb`)
+- **PostgreSQL**: Quoted schemas (`gstusr."vwInfoDb"`)
+
+### 2. EF Core Database-Specific Contexts
+```csharp
+public class SqlServerDbContext : MainDbContext
 {
-    throw new ArgumentException("StreetAddress can only contain letters (a-z), numbers (0-9), and spaces.");
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(connectionString, options => 
+            options.EnableRetryOnFailure());
+    }
+}
+
+public class MySqlDbContext : MainDbContext
+{
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+            b => b.SchemaBehavior(Microting.EntityFrameworkCore.MySql.Infrastructure.MySqlSchemaBehavior.Translate, 
+                (schema, table) => $"{schema}_{table}"));
+    }
 }
 ```
 
-**Pattern:** `^[a-zA-Z0-9\s]*$` (same for City and Country)
-- **Purpose:** Ensures address components contain only safe characters
-- **Allows:** Letters, numbers, and spaces for international address compatibility
+### 3. Provider-Specific Parameter Handling
+The repository layer detects the database provider at runtime and adjusts:
+- Parameter types and syntax
+- Command execution methods
+- Result set handling
+- Error handling patterns
 
-#### ZipCode Validation
-```csharp
-if (ZipCode <= 0) throw new ArgumentException("ZipCode has to be larger than zero");
-```
+### 4. View Naming Strategy
+- **SQL Server/PostgreSQL**: Schema.ViewName
+- **MySQL**: Schema_ViewName (translated automatically by EF Core)
 
-**Purpose:** Ensures ZipCode is a positive integer
-
-### PetCuDto Validation
-**Location:** `Models/DTO/CuDto.cs` (Line ~134)
-
-#### Pet Name Validation
-```csharp
-if (!string.IsNullOrEmpty(Name) && !Regex.IsMatch(Name, @"^[a-zA-Z0-9\s]*$"))
-{
-    throw new ArgumentException("Name can only contain letters (a-z), numbers (0-9), and spaces.");
-}
-```
-
-**Pattern:** `^[a-zA-Z0-9\s]*$`
-- **Purpose:** Validates pet names using the same safe character set
-
-#### Enum Validations
-```csharp
-if (!Enum.IsDefined(typeof(AnimalKind), Kind)) throw new ArgumentException("Kind has to be set to a valid value");
-if (!Enum.IsDefined(typeof(AnimalMood), Mood)) throw new ArgumentException("Mood has to be set to a valid value");
-```
-
-**Purpose:** Ensures enum values are valid and defined in the respective enumerations
-
-### QuoteCuDto Validation
-**Location:** `Models/DTO/CuDto.cs` (Line ~167)
-
-#### Quote Text Validation
-```csharp
-if (!string.IsNullOrEmpty(Quote) && !Regex.IsMatch(Quote, @"^[a-zA-Z0-9\s.,!?']*$"))
-{
-    throw new ArgumentException("Quote can only contain letters (a-z), numbers (0-9), spaces, and punctuation (.,!?').");
-}
-```
-
-**Pattern:** `^[a-zA-Z0-9\s.,!?']*$`
-- **Purpose:** Allows quotes to contain common punctuation for natural language
-- **Allowed Punctuation:** Period (.), comma (,), exclamation (!), question (?), apostrophe (')
-- **Rationale:** Quotes need punctuation for proper grammar and meaning
-
-#### Author Validation
-```csharp
-if (!string.IsNullOrEmpty(Author) && !Regex.IsMatch(Author, @"^[a-zA-Z0-9\s]*$"))
-{
-    throw new ArgumentException("Author can only contain letters (a-z), numbers (0-9), and spaces.");
-}
-```
-
-**Pattern:** `^[a-zA-Z0-9\s]*$`
-- **Purpose:** Validates author names using the standard safe character set
-
-## RegEx Pattern Explanations
-
-### Common Pattern: `^[a-zA-Z0-9\s]*$`
-- `^` - Start of string anchor
-- `[a-zA-Z0-9\s]` - Character class containing:
-  - `a-z` - Lowercase letters
-  - `A-Z` - Uppercase letters
-  - `0-9` - Digits
-  - `\s` - Whitespace characters (spaces, tabs, newlines)
-- `*` - Zero or more of the preceding character class
-- `$` - End of string anchor
-
-### Extended Pattern: `^[a-zA-Z0-9\s.,!?']*$`
-Same as above, plus:
-- `.` - Period
-- `,` - Comma
-- `!` - Exclamation mark
-- `?` - Question mark
-- `'` - Apostrophe/single quote
-
-### Email Pattern: `^[^@\s]+@[^@\s]+\.[^@\s]+$`
-- `[^@\s]` - Negated character class (anything except @ and whitespace)
-- `+` - One or more of the preceding character class
-- `@` - Literal @ symbol
-- `\.` - Escaped period (literal dot)
+This architecture provides database portability while maintaining optimal performance and feature utilization for each database platform.
 
 ## Best Practices
 
-### Security Considerations
-1. **Input Sanitization:** All user inputs are validated before processing
-2. **Injection Prevention:** RegEx patterns prevent SQL injection and XSS attacks
-3. **Consistent Patterns:** Similar fields use the same validation patterns for consistency
+1. **Use Views for Reporting**: Complex aggregations are better handled in database views rather than application code
+2. **Performance-Critical Operations**: Use stored procedures/functions for performance-hungry SQL operations like bulk deletes (e.g., `spDeleteAll`) rather than Entity Framework Core operations, as database-native operations are significantly faster for large datasets
+3. **Provider Detection**: Always detect the database provider at runtime for stored procedure calls
+3. **Schema Abstraction**: Use EF Core's built-in schema translation features when possible
+4. **Error Handling**: Implement database-specific error handling for stored procedures
+5. **Output Parameters**: Handle output parameters differently based on database provider capabilities
+6. **Case Sensitivity**: Be aware of case sensitivity differences, especially with PostgreSQL
 
-### Validation Strategy
-1. **Null Checks:** All validations check for null/empty before applying RegEx
-2. **Clear Error Messages:** Each validation provides specific, user-friendly error messages
-3. **Exception Handling:** Uses `ArgumentException` for validation failures
-4. **DateTime Validation:** Uses `DateTime.Parse` for robust date validation
-
-### Maintenance Guidelines
-1. **Pattern Updates:** When adding new allowed characters, update both the RegEx and error message
-2. **Documentation:** Keep this document updated when validation rules change
-3. **Testing:** Ensure all validation patterns are thoroughly tested with edge cases
-4. **Consistency:** Use the same patterns across similar fields for user predictability
-
-## Error Handling
-All validation methods throw `ArgumentException` with descriptive messages that:
-- Clearly state what went wrong
-- Specify what characters/values are allowed
-- Provide guidance for correcting the input
-
-This approach ensures consistent error handling throughout the application and provides clear feedback to API consumers.
+This approach ensures the application remains database-agnostic while leveraging the specific strengths of each database platform.
