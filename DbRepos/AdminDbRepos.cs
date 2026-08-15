@@ -7,6 +7,7 @@ using Models.DTO;
 using DbModels;
 using DbContext;
 using Configuration;
+using System.Security;
 
 namespace DbRepos;
 
@@ -78,6 +79,17 @@ public class AdminDbRepos
             friend.AddressDbM = (seeder.Bool) ? seeder.FromList(addresses) : null;
             friend.PetsDbM = seeder.ItemsToList<PetDbM>(seeder.Next(0, 4));
             friend.QuotesDbM = seeder.UniqueItemsPickedFromList(seeder.Next(0, 6), quotes);
+            friend.PetsDbM = seeder.ItemsToList<PetDbM>(seeder.Next(0, 4));
+            friend.CreditCardsDbM = seeder.ItemsToList<CreditCardDbM>(seeder.Next(0, 3));
+
+            foreach (var card in friend.CreditCardsDbM)
+            {
+                card.EnryptAndObfuscate(_encryptions.AesEncryptToBase64);
+#if DEBUG
+                var temp = card.Decrypt(_encryptions.AesDecryptFromBase64<CreditCardDbM>);
+                if (temp?.CreditCardId != card.CreditCardId) throw new SecurityException("CreditCard encryption error");
+#endif
+            }
         }
 
         //Note that all other tables are automatically set through FriendDbM Navigation properties

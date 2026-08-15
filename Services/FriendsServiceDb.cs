@@ -21,6 +21,6 @@ public class FriendsServiceDb : IFriendsService
     }
 
     //Simple 1:1 calls in this case, but as Services expands, this will no longer need to be the case
-    public Task<ResponsePageDto<IFriend>> ReadFriendsAsync() => _repo.ReadFriendsAsync();
+    public Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) => _repo.ReadFriendsAsync(seeded, flat, filter, pageNumber, pageSize);
 }
 

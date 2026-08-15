@@ -72,6 +72,31 @@ namespace DbContext.Migrations.PostgresDbContext
                 });
 
             migrationBuilder.CreateTable(
+                name: "CreditCardDbM",
+                columns: table => new
+                {
+                    CreditCardId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CardHolderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Issuer = table.Column<int>(type: "integer", nullable: false),
+                    Number = table.Column<string>(type: "varchar(200)", nullable: true),
+                    ExpirationYear = table.Column<string>(type: "varchar(200)", nullable: true),
+                    ExpirationMonth = table.Column<string>(type: "varchar(200)", nullable: true),
+                    EncryptedToken = table.Column<string>(type: "text", nullable: true),
+                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CreditCardDbM", x => x.CreditCardId);
+                    table.ForeignKey(
+                        name: "FK_CreditCardDbM_Friends_CardHolderId",
+                        column: x => x.CardHolderId,
+                        principalSchema: "supusr",
+                        principalTable: "Friends",
+                        principalColumn: "FriendId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr",
                 columns: table => new
@@ -130,6 +155,11 @@ namespace DbContext.Migrations.PostgresDbContext
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_CreditCardDbM_CardHolderId",
+                table: "CreditCardDbM",
+                column: "CardHolderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_FriendDbMQuoteDbM_QuotesDbMQuoteId",
                 schema: "supusr",
                 table: "FriendDbMQuoteDbM",
@@ -163,6 +193,9 @@ namespace DbContext.Migrations.PostgresDbContext
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "CreditCardDbM");
+
             migrationBuilder.DropTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr");

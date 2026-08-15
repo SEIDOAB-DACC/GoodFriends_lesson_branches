@@ -21,6 +21,6 @@ public class QuotesServiceDb : IQuotesService
     }
     
     //Simple 1:1 calls in this case, but as Services expands, this will no longer need to be the case
-    public Task<ResponsePageDto<IQuote>> ReadQuotesAsync() => _repo.ReadQuotesAsync();
+    public Task<ResponsePageDto<IQuote>> ReadQuotesAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) => _repo.ReadQuotesAsync(seeded, flat, filter, pageNumber, pageSize);
 }
 

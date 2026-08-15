@@ -22,6 +22,6 @@ public class AddressesServiceDb : IAddressesService
     }
     
     //Simple 1:1 calls in this case, but as Services expands, this will no longer need to be the case
-    public Task<ResponsePageDto<IAddress>> ReadAddressesAsync() => _repo.ReadAddressesAsync();
+    public Task<ResponsePageDto<IAddress>> ReadAddressesAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) => _repo.ReadAddressesAsync(seeded, flat, filter, pageNumber, pageSize);
 }
 

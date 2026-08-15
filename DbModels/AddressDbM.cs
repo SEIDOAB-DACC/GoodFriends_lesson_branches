@@ -33,11 +33,10 @@ sealed public class AddressDbM : Address, ISeed<AddressDbM>, IEquatable<AddressD
     public override int GetHashCode() => (StreetAddress, ZipCode, City, Country).GetHashCode();
     #endregion
 
-    #region correcting the Navigation properties migration error caused by using interfaces
-    [NotMapped] //removed from EFC 
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
+    [NotMapped]
     public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-
-    [JsonIgnore] //do not include in any json response from the WebApi
+    [JsonIgnore]
     public List<FriendDbM> FriendsDbM { get; set; } = null;
     #endregion
 

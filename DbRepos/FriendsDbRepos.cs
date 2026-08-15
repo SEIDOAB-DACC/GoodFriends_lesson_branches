@@ -20,16 +20,50 @@ public class FriendsDbRepos
         _dbContext = context;
     }
 
-    public async Task<ResponsePageDto<IFriend>> ReadFriendsAsync()
+    public async Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
     {
-        IQueryable<FriendDbM> query = _dbContext.Friends.AsNoTracking();
+        filter ??= "";
+        IQueryable<FriendDbM> query;
+        if (flat)
+        {
+            query = _dbContext.Friends.AsNoTracking();
+        }
+        else
+        {
+            query = _dbContext.Friends.AsNoTracking()
+                .Include(i => i.AddressDbM)
+                .Include(i => i.PetsDbM)
+                .Include(i => i.QuotesDbM)
+                .Include(i => i.CreditCardsDbM);
+        }
+
         var ret = new ResponsePageDto<IFriend>()
         {
 #if DEBUG
             ConnectionString = _dbContext.dbConnection,
 #endif
-            DbItemsCount = await query.CountAsync(),
-            PageItems = await query.ToListAsync<IFriend>(),
+            DbItemsCount = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) &&
+                        (i.FirstName.ToLower().Contains(filter) ||
+                            i.LastName.ToLower().Contains(filter))).CountAsync(),
+
+            PageItems = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) &&
+                        (i.FirstName.ToLower().Contains(filter) ||
+                            i.LastName.ToLower().Contains(filter)))
+
+            //Adding paging
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+
+            .ToListAsync<IFriend>(),
+
+            PageNr = pageNumber,
+            PageSize = pageSize
         };
         return ret;
     }

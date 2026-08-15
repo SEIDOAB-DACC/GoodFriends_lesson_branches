@@ -9,10 +9,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace DbContext.Migrations.SqlServerDbContext
+namespace DbContext.Migrations.mysqlDbContext
 {
-    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
-    [Migration("20251022101113_miInitial")]
+    [DbContext(typeof(MainDbContext.MySqlDbContext))]
+    [Migration("20250903165934_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -21,15 +21,15 @@ namespace DbContext.Migrations.SqlServerDbContext
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.8")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.AddressDbM", b =>
                 {
                     b.Property<Guid>("AddressId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -40,7 +40,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("StreetAddress")
                         .IsRequired()
@@ -57,17 +57,51 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.ToTable("Addresses", "supusr");
                 });
 
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.Property<Guid>("CreditCardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CardHolderId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("EncryptedToken")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ExpirationMonth")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ExpirationYear")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Issuer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("CardHolderId");
+
+                    b.ToTable("CreditCardDbM");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid?>("AddressId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime?>("Birthday")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
@@ -80,7 +114,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("FriendId");
 
@@ -97,10 +131,10 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("FriendId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<int>("Kind")
                         .HasColumnType("int");
@@ -113,7 +147,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("PetId");
 
@@ -126,7 +160,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");
@@ -135,7 +169,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("QuoteId");
 
@@ -145,16 +179,27 @@ namespace DbContext.Migrations.SqlServerDbContext
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
                 {
                     b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
 
                     b.HasIndex("QuotesDbMQuoteId");
 
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
+                });
+
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "CardHolderDbM")
+                        .WithMany("CreditCardsDbM")
+                        .HasForeignKey("CardHolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CardHolderDbM");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -200,6 +245,8 @@ namespace DbContext.Migrations.SqlServerDbContext
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
+                    b.Navigation("CreditCardsDbM");
+
                     b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618

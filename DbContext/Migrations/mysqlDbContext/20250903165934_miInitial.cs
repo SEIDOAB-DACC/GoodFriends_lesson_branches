@@ -86,6 +86,36 @@ namespace DbContext.Migrations.mysqlDbContext
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "CreditCardDbM",
+                columns: table => new
+                {
+                    CreditCardId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CardHolderId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    Issuer = table.Column<int>(type: "int", nullable: false),
+                    Number = table.Column<string>(type: "varchar(200)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ExpirationYear = table.Column<string>(type: "varchar(200)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ExpirationMonth = table.Column<string>(type: "varchar(200)", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EncryptedToken = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Seeded = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CreditCardDbM", x => x.CreditCardId);
+                    table.ForeignKey(
+                        name: "FK_CreditCardDbM_Friends_CardHolderId",
+                        column: x => x.CardHolderId,
+                        principalSchema: "supusr",
+                        principalTable: "Friends",
+                        principalColumn: "FriendId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr",
                 columns: table => new
@@ -147,6 +177,11 @@ namespace DbContext.Migrations.mysqlDbContext
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_CreditCardDbM_CardHolderId",
+                table: "CreditCardDbM",
+                column: "CardHolderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_FriendDbMQuoteDbM_QuotesDbMQuoteId",
                 schema: "supusr",
                 table: "FriendDbMQuoteDbM",
@@ -180,6 +215,9 @@ namespace DbContext.Migrations.mysqlDbContext
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "CreditCardDbM");
+
             migrationBuilder.DropTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr");

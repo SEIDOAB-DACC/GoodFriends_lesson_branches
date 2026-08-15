@@ -20,16 +20,52 @@ public class AddressesDbRepos
         _dbContext = context;
     }
 
-    public async Task<ResponsePageDto<IAddress>> ReadAddressesAsync()
+    public async Task<ResponsePageDto<IAddress>> ReadAddressesAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
     {
-        IQueryable<AddressDbM> query = _dbContext.Addresses.AsNoTracking();
+        filter ??= "";
+        IQueryable<AddressDbM> query;
+        if (flat)
+        {
+            query = _dbContext.Addresses.AsNoTracking();
+        }
+        else
+        {
+            query = _dbContext.Addresses.AsNoTracking()
+                .Include(i => i.FriendsDbM)
+                .ThenInclude(i => i.PetsDbM)
+                .Include(i => i.FriendsDbM)
+                .ThenInclude(i => i.QuotesDbM);
+        }
+
         var ret = new ResponsePageDto<IAddress>()
         {
 #if DEBUG
             ConnectionString = _dbContext.dbConnection,
 #endif
-            DbItemsCount = await query.CountAsync(),
-            PageItems = await query.ToListAsync<IAddress>(),
+            DbItemsCount = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) && 
+                        (i.StreetAddress.ToLower().Contains(filter) ||
+                            i.City.ToLower().Contains(filter) ||
+                            i.Country.ToLower().Contains(filter))).CountAsync(),
+
+            PageItems = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) && 
+                        (i.StreetAddress.ToLower().Contains(filter) ||
+                            i.City.ToLower().Contains(filter) ||
+                            i.Country.ToLower().Contains(filter)))
+
+            //Adding paging
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+
+            .ToListAsync<IAddress>(),
+
+            PageNr = pageNumber,
+            PageSize = pageSize
         };
         return ret;
     }

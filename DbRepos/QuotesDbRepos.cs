@@ -20,16 +20,51 @@ public class QuotesDbRepos
         _dbContext = context;
     }
 
-    public async Task<ResponsePageDto<IQuote>> ReadQuotesAsync()
+    public async Task<ResponsePageDto<IQuote>> ReadQuotesAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
     {
-        IQueryable<QuoteDbM> query = _dbContext.Quotes.AsNoTracking();
+        filter ??= "";
+        IQueryable<QuoteDbM> query;
+        if (flat)
+        {
+            query = _dbContext.Quotes.AsNoTracking();
+        }
+        else
+        {
+            query = _dbContext.Quotes.AsNoTracking()
+                .Include(i => i.FriendsDbM)
+                .ThenInclude(i => i.PetsDbM)
+                .Include(i => i.FriendsDbM)
+                .ThenInclude(i => i.AddressDbM);
+
+        }
+
         var ret = new ResponsePageDto<IQuote>()
         {
 #if DEBUG
             ConnectionString = _dbContext.dbConnection,
 #endif
-            DbItemsCount = await query.CountAsync(),
-            PageItems = await query.ToListAsync<IQuote>(),
+            DbItemsCount = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) &&
+                        (i.QuoteText.ToLower().Contains(filter) ||
+                            i.Author.ToLower().Contains(filter))).CountAsync(),
+
+            PageItems = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) &&
+                        (i.QuoteText.ToLower().Contains(filter) ||
+                            i.Author.ToLower().Contains(filter)))
+
+            //Adding paging
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+
+            .ToListAsync<IQuote>(),
+
+            PageNr = pageNumber,
+            PageSize = pageSize
         };
         return ret;
     }

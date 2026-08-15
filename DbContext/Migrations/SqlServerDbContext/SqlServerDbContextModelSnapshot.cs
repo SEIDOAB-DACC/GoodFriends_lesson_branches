@@ -54,6 +54,40 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.ToTable("Addresses", "supusr");
                 });
 
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.Property<Guid>("CreditCardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CardHolderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EncryptedToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExpirationMonth")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ExpirationYear")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Issuer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("CardHolderId");
+
+                    b.ToTable("CreditCardDbM");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
@@ -154,6 +188,17 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "CardHolderDbM")
+                        .WithMany("CreditCardsDbM")
+                        .HasForeignKey("CardHolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CardHolderDbM");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.HasOne("DbModels.AddressDbM", "AddressDbM")
@@ -197,6 +242,8 @@ namespace DbContext.Migrations.SqlServerDbContext
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
+                    b.Navigation("CreditCardsDbM");
+
                     b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618

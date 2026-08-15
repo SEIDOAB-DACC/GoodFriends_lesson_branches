@@ -3,16 +3,16 @@ using System;
 using DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DbContext.Migrations.mysqlDbContext
+namespace DbContext.Migrations.PostgresDbContext
 {
-    [DbContext(typeof(MainDbContext.MySqlDbContext))]
-    [Migration("20250808124054_miInitial")]
+    [DbContext(typeof(MainDbContext.PostgresDbContext))]
+    [Migration("20260731181407_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -20,16 +20,16 @@ namespace DbContext.Migrations.mysqlDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.AddressDbM", b =>
                 {
                     b.Property<Guid>("AddressId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -40,14 +40,14 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("StreetAddress")
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("AddressId");
 
@@ -57,17 +57,51 @@ namespace DbContext.Migrations.mysqlDbContext
                     b.ToTable("Addresses", "supusr");
                 });
 
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.Property<Guid>("CreditCardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CardHolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EncryptedToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExpirationMonth")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ExpirationYear")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Issuer")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("CardHolderId");
+
+                    b.ToTable("CreditCardDbM");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("AddressId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("Birthday")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
@@ -80,7 +114,7 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.HasKey("FriendId");
 
@@ -97,23 +131,23 @@ namespace DbContext.Migrations.mysqlDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("FriendId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Mood")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.HasKey("PetId");
 
@@ -126,7 +160,7 @@ namespace DbContext.Migrations.mysqlDbContext
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");
@@ -135,7 +169,7 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.HasKey("QuoteId");
 
@@ -145,16 +179,27 @@ namespace DbContext.Migrations.mysqlDbContext
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
                 {
                     b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
 
                     b.HasIndex("QuotesDbMQuoteId");
 
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
+                });
+
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "CardHolderDbM")
+                        .WithMany("CreditCardsDbM")
+                        .HasForeignKey("CardHolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CardHolderDbM");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -200,6 +245,8 @@ namespace DbContext.Migrations.mysqlDbContext
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
+                    b.Navigation("CreditCardsDbM");
+
                     b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618

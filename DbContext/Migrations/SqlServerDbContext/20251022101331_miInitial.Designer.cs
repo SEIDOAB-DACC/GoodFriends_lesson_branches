@@ -3,16 +3,16 @@ using System;
 using DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DbContext.Migrations.PostgresDbContext
+namespace DbContext.Migrations.SqlServerDbContext
 {
-    [DbContext(typeof(MainDbContext.PostgresDbContext))]
-    [Migration("20260731180845_miInitial")]
+    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
+    [Migration("20251022101331_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -20,16 +20,16 @@ namespace DbContext.Migrations.PostgresDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.AddressDbM", b =>
                 {
                     b.Property<Guid>("AddressId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -40,14 +40,14 @@ namespace DbContext.Migrations.PostgresDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<string>("StreetAddress")
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("AddressId");
 
@@ -57,17 +57,51 @@ namespace DbContext.Migrations.PostgresDbContext
                     b.ToTable("Addresses", "supusr");
                 });
 
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.Property<Guid>("CreditCardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CardHolderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EncryptedToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExpirationMonth")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ExpirationYear")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Issuer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("CardHolderId");
+
+                    b.ToTable("CreditCardDbM");
+                });
+
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("AddressId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("Birthday")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
@@ -80,7 +114,7 @@ namespace DbContext.Migrations.PostgresDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.HasKey("FriendId");
 
@@ -97,23 +131,23 @@ namespace DbContext.Migrations.PostgresDbContext
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("FriendId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("Mood")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.HasKey("PetId");
 
@@ -126,7 +160,7 @@ namespace DbContext.Migrations.PostgresDbContext
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");
@@ -135,7 +169,7 @@ namespace DbContext.Migrations.PostgresDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.HasKey("QuoteId");
 
@@ -145,16 +179,27 @@ namespace DbContext.Migrations.PostgresDbContext
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
                 {
                     b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
 
                     b.HasIndex("QuotesDbMQuoteId");
 
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
+                });
+
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
+                {
+                    b.HasOne("DbModels.FriendDbM", "CardHolderDbM")
+                        .WithMany("CreditCardsDbM")
+                        .HasForeignKey("CardHolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CardHolderDbM");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -200,6 +245,8 @@ namespace DbContext.Migrations.PostgresDbContext
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
+                    b.Navigation("CreditCardsDbM");
+
                     b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618

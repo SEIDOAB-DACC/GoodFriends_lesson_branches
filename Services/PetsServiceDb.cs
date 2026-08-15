@@ -21,6 +21,6 @@ public class PetsServiceDb : IPetsService
     }
     
     //Simple 1:1 calls in this case, but as Services expands, this will no longer need to be the case
-    public Task<ResponsePageDto<IPet>> ReadPetsAsync() => _repo.ReadPetsAsync();
+    public Task<ResponsePageDto<IPet>> ReadPetsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) => _repo.ReadPetsAsync(seeded, flat, filter, pageNumber, pageSize);
 }
 

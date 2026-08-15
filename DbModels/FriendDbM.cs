@@ -23,25 +23,29 @@ sealed public class FriendDbM : Friend, ISeed<FriendDbM>
     [JsonIgnore]
     public Guid? AddressId { get; set; }
 
-    #region correcting the Navigation properties migration error caused by using interfaces
+    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [NotMapped]
     public override IAddress Address { get => AddressDbM; set => new NotImplementedException(); }
-    
     [JsonIgnore]
     [ForeignKey("AddressId")]
     public AddressDbM AddressDbM { get; set; } = null;    //This is implemented in the database table
 
     [NotMapped]
     public override List<IPet> Pets { get => PetsDbM?.ToList<IPet>(); set => new NotImplementedException(); }
-
     [JsonIgnore]
     public List<PetDbM> PetsDbM { get; set; } = null;
 
     [NotMapped] 
     public override List<IQuote> Quotes { get => QuotesDbM?.ToList<IQuote>(); set => new NotImplementedException(); }
-
     [JsonIgnore]
     public List<QuoteDbM> QuotesDbM { get; set; } = null;
+
+    [NotMapped] 
+    public override List<ICreditCard> CreditCards { get => CreditCardsDbM?.ToList<ICreditCard>(); set => new NotImplementedException(); }
+
+    [JsonIgnore]
+    public List<CreditCardDbM> CreditCardsDbM { get; set; } = null;
+
     #endregion
 
     #region randomly seed this instance

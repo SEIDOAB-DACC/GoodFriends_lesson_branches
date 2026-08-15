@@ -20,16 +20,48 @@ public class PetsDbRepos
         _dbContext = context;
     }
 
-    public async Task<ResponsePageDto<IPet>> ReadPetsAsync()
+    public async Task<ResponsePageDto<IPet>> ReadPetsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
     {
-        IQueryable<PetDbM> query = _dbContext.Pets.AsNoTracking();
+        filter ??= "";
+        IQueryable<PetDbM> query;
+        if (flat)
+        {
+            query = _dbContext.Pets.AsNoTracking();
+        }
+        else
+        {
+            query = _dbContext.Pets.AsNoTracking()
+                .Include(i => i.FriendDbM)
+                .ThenInclude(i => i.AddressDbM)
+                .Include(i => i.FriendDbM)
+                .ThenInclude(i => i.QuotesDbM);
+        }
+
         var ret = new ResponsePageDto<IPet>()
         {
 #if DEBUG
             ConnectionString = _dbContext.dbConnection,
 #endif
-            DbItemsCount = await query.CountAsync(),
-            PageItems = await query.ToListAsync<IPet>(),
+            DbItemsCount = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) && 
+                        (i.Name.ToLower().Contains(filter))).CountAsync(),
+
+            PageItems = await query
+
+            //Adding filter functionality
+            .Where(i => (i.Seeded == seeded) && 
+                        (i.Name.ToLower().Contains(filter)))
+
+            //Adding paging
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+
+            .ToListAsync<IPet>(),
+
+            PageNr = pageNumber,
+            PageSize = pageSize
         };
         return ret;
     }

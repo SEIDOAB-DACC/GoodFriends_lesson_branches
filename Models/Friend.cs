@@ -22,6 +22,9 @@ public class Friend : IFriend, ISeed<Friend>
     // One Friend may have many favorite quotes
     public virtual List<IQuote> Quotes { get; set; } = null;
 
+    // One Friend may have many Credit Cards
+    public virtual List<ICreditCard> CreditCards { get; set; } = null;
+
 
     #region contructors
     public Friend() { }
