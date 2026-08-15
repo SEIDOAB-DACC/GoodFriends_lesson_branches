@@ -16,33 +16,18 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
     public DbSet<QuoteDbM> Quotes { get; set; }
     #endregion
 
+    #region constructors
     public MainDbContext() { }
     public MainDbContext(DbContextOptions options) : base(options)
     { }
+    #endregion
 
-    //Used only for CodeFirst Database Migration and database update commands
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var connectionString = GetConnectionString("SqlServerDocker");
-            optionsBuilder.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
-        }
-
-        base.OnConfiguring(optionsBuilder);
-    }
-
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        configurationBuilder.Properties<decimal>().HaveColumnType("money");
-        configurationBuilder.Properties<string>().HaveColumnType("varchar(200)");
-
-        base.ConfigureConventions(configurationBuilder);
-    }
-
+    //Here we can modify the migration building
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //Add your own modelling based on done migrations
+        #region override modelbuilder
+        #endregion
+        
         base.OnModelCreating(modelBuilder);
     }
 
@@ -60,4 +45,95 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
 
         return connectionString;
     }
+
+    #region DbContext for some popular databases
+    public class SqlServerDbContext : MainDbContext
+    {
+        public SqlServerDbContext() { }
+        public SqlServerDbContext(DbContextOptions options) 
+            : base(options) { }
+
+
+        //Used only for CodeFirst Database Migration and database update commands
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                var connectionString = GetConnectionString("SqlServerDocker");
+                optionsBuilder.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
+            }
+
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<decimal>().HaveColumnType("money");
+            configurationBuilder.Properties<string>().HaveColumnType("varchar(200)");
+
+            base.ConfigureConventions(configurationBuilder);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            //Add your own modelling based on done migrations
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+
+    public class MySqlDbContext : MainDbContext
+    {
+        public MySqlDbContext() { }
+        public MySqlDbContext(DbContextOptions options) : base(options) { }
+
+
+        //Used only for CodeFirst Database Migration
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                var connectionString = GetConnectionString("MySqlDocker");
+                optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+                    b => b.SchemaBehavior(Microting.EntityFrameworkCore.MySql.Infrastructure.MySqlSchemaBehavior.Translate, (schema, table) => $"{schema}_{table}"));
+            }
+
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<string>().HaveColumnType("varchar(200)");
+
+            base.ConfigureConventions(configurationBuilder);
+
+        }
+    }
+
+    public class PostgresDbContext : MainDbContext
+    {
+        public PostgresDbContext() { }
+        public PostgresDbContext(DbContextOptions options) : base(options){ }
+
+
+        //Used only for CodeFirst Database Migration
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                var connectionString = GetConnectionString("PostgreSqlDocker");
+                System.Console.WriteLine($"Connection String: {connectionString}");
+                
+                optionsBuilder.UseNpgsql(connectionString);
+            }
+
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<string>().HaveColumnType("varchar(200)");
+            base.ConfigureConventions(configurationBuilder);
+        }
+    }
+    #endregion
 }

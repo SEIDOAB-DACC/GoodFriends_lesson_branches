@@ -1,28 +1,26 @@
 To create the AppWebApi
 
-1. Delete folder DbContext/Migrations
-
-2. Create a new database. With Terminal in folder DbContext execute below EFC cli
+1. Create the database. With Terminal in folder _scripts 
    
-   Remove any database
-      dotnet ef database drop -f 
+   macOs
+   ./database-rebuild-all.sh sql-music sqlserver docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-music mysql docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-music postgresql docker root ../AppWebApi
    
-   Make a migration
-      dotnet ef migrations add initial_migration
+   Windows
+   ./database-rebuild-all.ps1 sql-music sqlserver docker root ../AppWebApi
+   ./database-rebuild-all.ps1 sql-music mysql docker root ../AppWebApi
+   ./database-rebuild-all.ps1 sql-music postgresql docker root ../AppWebApi
    
-   Create/update the database schema from Migrations
-      dotnet ef database update
-
    Ensure no errors from build, migration or database update
 
 
-3. From Azure Data Studio you can now connect to the database from the connection string in appsettings.json
+2. From Azure Data Studio you can now connect to the database
+   Use connection string from user secrets:
+   connection string corresponding to Tag
+   "sql-music.<db_type>.docker.root"
 
-   "ConnectionStrings": {
-         "SqlServerDocker": "...""
-   }
-
-4. Run AppWebApi with or without debugger
+3. Run AppWebApi with or without debugger
 
    Without debugger:   
    Open a Terminal in folder AppWebApi run: 
@@ -32,8 +30,8 @@ To create the AppWebApi
    Verify your can execute endpoints
       Admin/Environment, Admin/Version and Admin/Log
 
-5. Use From Azure Data Studio to explore the created database and it's schema 
+4. Use From Azure Data Studio to explore the created database and it's schema 
    Notice that one table is implemented in the database
 
-6. Use endpoint Admin/Seed to fill the database Quote table with content.
+5. Use endpoint Admin/Seed to fill the database Quote table with content.
    Check the content using Azure Data Studio

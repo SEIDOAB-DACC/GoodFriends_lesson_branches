@@ -50,7 +50,7 @@ namespace AppWebApi.Controllers
         //GET: api/admin/environment
         [HttpGet()]
         [ActionName("Environment")]
-        [ProducesResponseType(200, Type = typeof(string))]
+        [ProducesResponseType(200, Type = typeof(DatabaseConnections.SetupInformation))]
         public IActionResult Environment()
         {
             try

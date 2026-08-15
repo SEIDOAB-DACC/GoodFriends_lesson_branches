@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DbContext.Migrations
+namespace DbContext.Migrations.PostgresMigrations
 {
     /// <inheritdoc />
     public partial class initial_migration : Migration
@@ -15,7 +15,7 @@ namespace DbContext.Migrations
                 name: "Quotes",
                 columns: table => new
                 {
-                    QuoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    QuoteId = table.Column<Guid>(type: "uuid", nullable: false),
                     QuoteText = table.Column<string>(type: "varchar(200)", nullable: true),
                     Author = table.Column<string>(type: "varchar(200)", nullable: true)
                 },

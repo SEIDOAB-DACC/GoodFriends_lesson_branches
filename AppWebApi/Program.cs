@@ -68,6 +68,17 @@ builder.Services.AddDbContext<MainDbContext>(options =>
     var connectionString = builder.Configuration.GetConnectionString("SqlServerDocker");
     options.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
     // SQLSERVER END
+
+    // MYSQL
+//    var connectionString = builder.Configuration.GetConnectionString("MySqlDocker");
+//    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+//      b => b.SchemaBehavior(Microting.EntityFrameworkCore.MySql.Infrastructure.MySqlSchemaBehavior.Translate, (schema, table) => $"{schema}_{table}"));
+    // MYSQL END
+
+    // POSTGRESQL
+//    var connectionString = builder.Configuration.GetConnectionString("PostgreSqlDocker");
+//    options.UseNpgsql(connectionString);
+    // POSTGRESQL END
 });
 #endregion
 

@@ -53,21 +53,80 @@ This document explains the responsibilities and relationships of the `DbContext`
    - Example (in `Startup.cs` or `Program.cs`):
      ```csharp
      services.AddDbContext<MainDbContext>(options =>
-         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+         options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
      ```
 
 ---
 
-## MainDbContext (Simple, Single-Database Implementation)
 
-`MainDbContext` is the core Entity Framework Core context class for the application. In its simplest form, it is designed to support only one database provider (such as SQL Server, PostgreSQL, or MySQL) at a time.
+---
 
-**Key points:**
-- Manages the database connection and tracks changes to entities.
-- Exposes `DbSet` properties for each table/entity in the database (e.g., `Quotes`).
-- Reads the connection string from configuration (such as `appsettings.json`).
-- Used directly for all database operations, migrations, and updates.
+## MainDbContext and Its Child Classes
 
+### MainDbContext
+`MainDbContext` is the base Entity Framework Core context class for the application. It manages the database connection, entity sets (such as `Quotes`), and provides shared logic for all database operations. It exposes a method to retrieve connection strings from configuration.
+
+**Key responsibilities:**
+- Defines the main `DbSet` properties for entities (e.g., `Quotes`).
+- Provides constructors for dependency injection and direct instantiation.
+- Contains shared logic for model building and connection string retrieval.
+
+### Child DbContext Classes
+To support multiple database providers, `MainDbContext` is subclassed for each supported database:
+
+- **SqlServerDbContext**
+   - Inherits from `MainDbContext`.
+   - Configures the context to use SQL Server via `UseSqlServer`.
+   - Sets up conventions for decimal and string properties.
+   - Used for SQL Server-specific migrations and database updates.
+
+- **MySqlDbContext**
+   - Inherits from `MainDbContext`.
+   - Configures the context to use MySQL via `UseMySql`.
+   - Sets up conventions for string properties.
+   - Used for MySQL-specific migrations and database updates.
+
+- **PostgresDbContext**
+   - Inherits from `MainDbContext`.
+   - Configures the context to use PostgreSQL via `UseNpgsql`.
+   - Sets up conventions for string properties.
+   - Used for PostgreSQL-specific migrations and database updates.
+
+**Purpose of this structure:**
+- Allows the application to target different database engines with minimal code changes.
+- Each child context can override configuration and conventions as needed for its database provider.
+- Enables provider-specific migrations and connection handling.
+
+---
+
+## Explanation: Purpose and Usage of OnConfiguring, ConfigureConventions, and OnModelCreating in EF Core
+
+### OnConfiguring
+- **Purpose:** Sets up the database provider, connection string, and other context options.
+- **Usage:** Override this method in your DbContext to configure how EF Core connects to the database. It is called every time a new context instance is created, unless options are already configured externally (e.g., via dependency injection).
+- **When Used:** Both at design time (e.g., migrations) and runtime (when your app runs).
+
+### ConfigureConventions
+- **Purpose:** Defines global conventions for model building, such as default column types or property behaviors.
+- **Usage:** Override this method to set up conventions that apply to all entities and properties in your model. This helps reduce repetitive configuration.
+- **When Used:** During model creation, before OnModelCreating, at both design time and runtime.
+
+### OnModelCreating
+- **Purpose:** Customizes the model by configuring entity mappings, relationships, constraints, and more using the Fluent API.
+- **Usage:** Override this method to fine-tune how your classes map to database tables, set up relationships, add constraints (like check constraints), and configure indexes.
+- **When Used:** During model creation, at both design time (for migrations) and runtime (when the context is used).
+
+---
+
+**Summary Table**
+
+| Method              | Main Purpose                        | When Called                |
+|---------------------|-------------------------------------|----------------------------|
+| OnConfiguring       | Set up context/database connection  | Design time & runtime      |
+| ConfigureConventions| Set global model conventions        | Design time & runtime      |
+| OnModelCreating     | Customize model (tables, relations) | Design time & runtime      |
+
+These methods are essential for controlling how EF Core builds and configures your database model, both when running your application and when using EF Core tools (like migrations).
 
 ---
 
@@ -76,3 +135,4 @@ This document explains the responsibilities and relationships of the `DbContext`
 - `DbContext` manages the database connection and entity tracking.
 - `DbRepos` provides data access methods using `DbContext` and `DbModels`.
 - The connection string is read from configuration and injected into `DbContext` for database operations.
+- `MainDbContext` is the base context, with child classes for each supported database provider (SQL Server, MySQL, PostgreSQL).
