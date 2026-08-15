@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 
+using Models.DTO;
 using Services;
 using Configuration;
 using Configuration.Options;
@@ -46,6 +47,51 @@ namespace AppWebApi.Controllers
             }
          }
 
+#if DEBUG
+        //GET: api/admin/seed?count={count}
+        [HttpGet()]
+        [ActionName("Seed")]
+        [ProducesResponseType(200, Type = typeof(GstUsrInfoAllDto))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> Seed(string count = "100")
+        {
+            try
+            {
+                int countArg = int.Parse(count);
+
+                _logger.LogInformation($"{nameof(Seed)}: {nameof(countArg)}: {countArg}");
+                var info = await _service.SeedAsync(countArg);
+                return Ok(info);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(Seed)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        //GET: api/admin/removeseed
+        [HttpGet()]
+        [ActionName("RemoveSeed")]
+        [ProducesResponseType(200, Type = typeof(GstUsrInfoAllDto))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> RemoveSeed(string seeded = "true")
+        {
+            try
+            {
+                bool seededArg = bool.Parse(seeded);
+
+                _logger.LogInformation($"{nameof(RemoveSeed)}: {nameof(seededArg)}: {seededArg}");
+                var info = await _service.RemoveSeedAsync(seededArg);
+                return Ok(info);        
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(RemoveSeed)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+#endif
         [HttpGet()]
         [ActionName("Version")]
         [ProducesResponseType(typeof(VersionOptions), 200)]
@@ -62,28 +108,6 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-        //GET: api/admin/seed?count={count}
-        [HttpGet()]
-        [ActionName("Seed")]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(400, Type = typeof(string))]
-        public async Task<IActionResult> Seed(int nrItems = 10)
-        {
-            try
-            {
-                _logger.LogInformation($"{nameof(Seed)}");
-                await _service.SeedAsync(nrItems);
-
-                return Ok($"Seeded {nrItems} items successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(Seed)}: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
-        }
-
         //GET: api/admin/log
         [HttpGet()]
         [ActionName("Log")]
@@ -97,7 +121,6 @@ namespace AppWebApi.Controllers
             }
             return Ok("No messages in log");
         }
-
 
         public AdminController(ILogger<AdminController> logger,
                     IConfiguration configuration,

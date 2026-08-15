@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using Models;
+using Models.DTO;
 using Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -15,6 +16,25 @@ namespace AppWebApi.Controllers
     {
         readonly IFriendsService _service = null;
         readonly ILogger<FriendsController> _logger = null;
+
+        [HttpGet()]
+        [ActionName("Read")]
+        [ProducesResponseType(200, Type = typeof(ResponsePageDto<IFriend>))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> Read()
+        {
+            try
+            {
+                _logger.LogInformation($"{nameof(Read)}");
+                var resp = await _service.ReadFriendsAsync();     
+                return Ok(resp);     
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(Read)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
 
         public FriendsController(IFriendsService service, ILogger<FriendsController> logger)
         {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
 using Configuration;
+using Models.DTO;
 using DbModels;
 using Microsoft.Extensions.Hosting.Internal;
 using DbContext.Extensions;
@@ -38,6 +39,32 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         #region override modelbuilder
+        // This is where we can modify the model builder to add custom configurations
+        modelBuilder.Entity("DbModels.PetDbM", b =>
+        {
+            b.HasOne("DbModels.FriendDbM", "FriendDbM")
+                .WithMany("PetsDbM")
+                .HasForeignKey("FriendId")
+
+                // Enforces Cascade Delete is default due to PetDbM - public Guid FriendId { get; set; } -
+                .OnDelete(DeleteBehavior.Cascade);
+
+                // Try DeleteBehavior.Cascade  SetNull
+                // PetDbM - public Guid? FriendId { get; set; } -
+                //.OnDelete(DeleteBehavior.SetNull);
+
+            b.Navigation("FriendDbM");
+        });
+        
+        modelBuilder.Entity("DbModels.FriendDbM", b =>
+        {
+            b.HasOne("DbModels.AddressDbM", "AddressDbM")
+                .WithMany("FriendsDbM")
+                .HasForeignKey("AddressId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            b.Navigation("AddressDbM");
+        });
         #endregion
         
         base.OnModelCreating(modelBuilder);

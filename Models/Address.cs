@@ -2,7 +2,7 @@
 
 namespace Models;
 
-public class Address : IAddress, IEquatable<Address>
+public class Address : IAddress, ISeed<Address>, IEquatable<Address>
 {
     public virtual Guid AddressId { get; set; }
 
@@ -19,6 +19,8 @@ public class Address : IAddress, IEquatable<Address>
     public Address() { }
     public Address(Address org)
     {
+        this.Seeded = org.Seeded;
+
         this.AddressId = org.AddressId;
         this.StreetAddress = org.StreetAddress;
         this.ZipCode = org.ZipCode;
@@ -35,6 +37,23 @@ public class Address : IAddress, IEquatable<Address>
     public override bool Equals(object obj) => Equals(obj as Address);
     public override int GetHashCode() => (StreetAddress, ZipCode, City, Country).GetHashCode();
 
+    #endregion
+
+    #region randomly seed this instance
+    public bool Seeded { get; set; } = false;
+
+    public virtual Address Seed(SeedGenerator seedGenerator)
+    {
+        Seeded = true;
+        AddressId = Guid.NewGuid();
+
+        Country = seedGenerator.Country;
+        StreetAddress = seedGenerator.StreetAddress(Country);
+        ZipCode = seedGenerator.ZipCode;
+        City = seedGenerator.City(Country);
+
+        return this;
+    }
     #endregion
 }
 

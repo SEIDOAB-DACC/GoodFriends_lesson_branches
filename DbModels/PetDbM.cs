@@ -4,10 +4,11 @@ using Newtonsoft.Json;
 
 using Seido.Utilities.SeedGenerator;
 using Models;
+using Models.DTO;
 
 namespace DbModels;
 [Table("Pets", Schema = "supusr")]
-sealed public class PetDbM : Pet
+sealed public class PetDbM : Pet, ISeed<PetDbM>
 {
     [Key]    
     public override Guid PetId { get; set; }
@@ -19,12 +20,21 @@ sealed public class PetDbM : Pet
     [Required]
     public override string Name { get; set; }
     
-    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
+    #region correcting the Navigation properties migration error caused by using interfaces
     [ForeignKey("FriendId")]     
     [JsonIgnore]
     public  FriendDbM FriendDbM { get; set; } = null;         
+    
     [NotMapped]
     public override IFriend Friend { get => FriendDbM; set => new NotImplementedException(); }        
+    #endregion
+
+    #region randomly seed this instance
+    public override PetDbM Seed(SeedGenerator sgen)
+    {
+        base.Seed(sgen);
+        return this;
+    }
     #endregion
 
 

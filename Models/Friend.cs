@@ -2,7 +2,7 @@
 
 namespace Models;
 
-public class Friend : IFriend
+public class Friend : IFriend, ISeed<Friend>
 {
     public virtual Guid FriendId { get; set; }
 
@@ -23,12 +23,13 @@ public class Friend : IFriend
     public virtual List<IQuote> Quotes { get; set; } = null;
 
 
-
     #region contructors
     public Friend() { }
 
     public Friend(Friend org)
     {
+        this.Seeded = org.Seeded;
+
         this.FriendId = org.FriendId;
         this.FirstName = org.FirstName;
         this.LastName = org.LastName;
@@ -39,6 +40,22 @@ public class Friend : IFriend
 
         //using Linq Select and copy contructor to create a list copy
         this.Pets = (org.Pets != null) ? org.Pets.Select(p => new Pet((Pet) p)).ToList<IPet>() : null;
+    }
+    #endregion
+
+    #region randomly seed this instance
+    public bool Seeded { get; set; } = false;
+
+    public virtual Friend Seed(SeedGenerator sgen)
+    {
+        Seeded = true;
+        FriendId = Guid.NewGuid();
+        FirstName = sgen.FirstName;
+        LastName = sgen.LastName;
+        Email = sgen.Email(FirstName, LastName);
+        Birthday = (sgen.Bool) ? sgen.DateAndTime(1970, 2000) : null;
+
+        return this;
     }
     #endregion
 }

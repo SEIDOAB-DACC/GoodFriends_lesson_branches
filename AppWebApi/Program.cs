@@ -48,11 +48,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
-
-//Add InMemoryLoggerProvider logger
-builder.Services.AddInMemoryLogger();
-
 //Inject DbRepos and Services
 builder.Services.AddScoped<AdminDbRepos>();
 builder.Services.AddScoped<FriendsDbRepos>();

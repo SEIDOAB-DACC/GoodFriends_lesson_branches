@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 
+using Models.DTO;
 using Services;
 using System.Text.RegularExpressions;
 
@@ -15,6 +16,26 @@ namespace AppWebApi.Controllers
     {
         readonly IAdminService _service;
         readonly ILogger<GuestController> _logger = null;
+
+        //GET: api/guest/info
+        [HttpGet()]
+        [ActionName("Info")]
+        [ProducesResponseType(200, Type = typeof(GstUsrInfoAllDto))]
+        public async Task<IActionResult> Info()
+        {
+            try
+            {
+                var info = await _service.GuestInfoAsync();
+
+                _logger.LogInformation($"{nameof(Info)}:\n{JsonConvert.SerializeObject(info)}");
+                return Ok(info);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(Info)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
 
         public GuestController(IAdminService service, ILogger<GuestController> logger)
         {

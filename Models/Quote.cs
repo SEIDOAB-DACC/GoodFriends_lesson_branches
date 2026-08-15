@@ -2,7 +2,7 @@
 
 namespace Models;
 
-public class Quote : IQuote, IEquatable<Quote>
+public class Quote : IQuote, ISeed<Quote>, IEquatable<Quote>
 {
     public virtual Guid QuoteId { get; set; }
     public virtual string QuoteText { get; set; }
@@ -21,6 +21,7 @@ public class Quote : IQuote, IEquatable<Quote>
         QuoteId = Guid.NewGuid();
         QuoteText = goodQuote.Quote;
         Author = goodQuote.Author;
+        Seeded = true;
     }
 
     #endregion
@@ -31,6 +32,22 @@ public class Quote : IQuote, IEquatable<Quote>
     public override bool Equals(object obj) => Equals(obj as Quote);
     public override int GetHashCode() => (QuoteText, Author).GetHashCode();
 
+    #endregion
+
+    #region randomly seed this instance
+    public bool Seeded { get; set; } = false;
+
+    public virtual Quote Seed(SeedGenerator seedGenerator)
+    {
+        Seeded = true;
+        QuoteId = Guid.NewGuid();
+
+        var quote = seedGenerator.Quote;
+        QuoteText = quote.Quote;
+        Author = quote.Author;
+
+        return this;
+    }
     #endregion
 }
 

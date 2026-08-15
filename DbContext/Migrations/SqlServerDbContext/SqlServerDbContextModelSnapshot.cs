@@ -36,6 +36,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
                     b.Property<string>("StreetAddress")
                         .IsRequired()
                         .HasColumnType("varchar(200)");
@@ -73,6 +76,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.Property<string>("LastName")
                         .HasColumnType("varchar(200)");
 
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
                     b.HasKey("FriendId");
 
                     b.HasIndex("AddressId");
@@ -103,6 +109,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .IsRequired()
                         .HasColumnType("varchar(200)");
 
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
                     b.HasKey("PetId");
 
                     b.HasIndex("FriendId");
@@ -121,6 +130,9 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.Property<string>("QuoteText")
                         .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
 
                     b.HasKey("QuoteId");
 
@@ -146,7 +158,8 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.HasOne("DbModels.AddressDbM", "AddressDbM")
                         .WithMany("FriendsDbM")
-                        .HasForeignKey("AddressId");
+                        .HasForeignKey("AddressId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AddressDbM");
                 });

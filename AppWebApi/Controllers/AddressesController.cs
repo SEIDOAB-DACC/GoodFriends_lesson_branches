@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using Models;
+using Models.DTO;
 using Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -15,6 +16,26 @@ namespace AppWebApi.Controllers
     {
         readonly IAddressesService _service;
         readonly ILogger<AddressesController> _logger;
+
+        //GET: api/addresses/read
+        [HttpGet()]
+        [ActionName("Read")]
+        [ProducesResponseType(200, Type = typeof(ResponsePageDto<IAddress>))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> Read()
+        {
+            try
+            {
+                _logger.LogInformation($"{nameof(Read)}");
+                var resp = await _service.ReadAddressesAsync();
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(Read)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
 
         public AddressesController(IAddressesService service, ILogger<AddressesController> logger)
         {

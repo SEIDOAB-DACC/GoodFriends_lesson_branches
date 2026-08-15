@@ -5,12 +5,13 @@ using Newtonsoft.Json;
 
 using Seido.Utilities.SeedGenerator;
 using Models;
+using Models.DTO;
 
 namespace DbModels;
 
 [Table("Addresses", Schema = "supusr")]
 [Index(nameof(StreetAddress), nameof(ZipCode), nameof(City), nameof(Country), IsUnique = true)]
-sealed public class AddressDbM : Address, IEquatable<AddressDbM>
+sealed public class AddressDbM : Address, ISeed<AddressDbM>, IEquatable<AddressDbM>
 {
     [Key]     
     public override Guid AddressId { get; set; }
@@ -32,11 +33,20 @@ sealed public class AddressDbM : Address, IEquatable<AddressDbM>
     public override int GetHashCode() => (StreetAddress, ZipCode, City, Country).GetHashCode();
     #endregion
 
-    #region implementing entity Navigation properties when model is using interfaces in the relationships between models
-    [NotMapped]
+    #region correcting the Navigation properties migration error caused by using interfaces
+    [NotMapped] //removed from EFC 
     public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-    [JsonIgnore]
+
+    [JsonIgnore] //do not include in any json response from the WebApi
     public List<FriendDbM> FriendsDbM { get; set; } = null;
+    #endregion
+
+    #region randomly seed this instance
+    public override AddressDbM Seed(SeedGenerator seedGenerator)
+    {
+        base.Seed(seedGenerator);
+        return this;
+    }
     #endregion
 
     #region constructors
