@@ -3,22 +3,22 @@ To create the AppWebApi
 1. Create the database. With Terminal in folder _scripts 
    
    macOs
-   ./database-rebuild-all.sh sql-music sqlserver docker root ../AppWebApi
-   ./database-rebuild-all.sh sql-music mysql docker root ../AppWebApi
-   ./database-rebuild-all.sh sql-music postgresql docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-friends sqlserver docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-friends mysql docker root ../AppWebApi
+   ./database-rebuild-all.sh sql-friends postgresql docker root ../AppWebApi
    
    Windows
-   ./database-rebuild-all.ps1 sql-music sqlserver docker root ../AppWebApi
-   ./database-rebuild-all.ps1 sql-music mysql docker root ../AppWebApi
-   ./database-rebuild-all.ps1 sql-music postgresql docker root ../AppWebApi
-   
+   .\database-rebuild-all.ps1 sql-friends sqlserver docker root ..\AppWebApi
+   ./database-rebuild-all.ps1 sql-friends mysql docker root ..\AppWebApi
+   ./database-rebuild-all.ps1 sql-friends postgresql docker root ..\AppWebApi
+
    Ensure no errors from build, migration or database update
 
 
 2. From Azure Data Studio you can now connect to the database
    Use connection string from user secrets:
    connection string corresponding to Tag
-   "sql-music.<db_type>.docker.root"
+   "sql-friends.<db_type>.docker.root"
 
 3. Run AppWebApi with or without debugger
 

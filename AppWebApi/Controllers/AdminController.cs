@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using Services;
 using Configuration;
 using Configuration.Options;
-
 using Microsoft.Extensions.Options;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -27,26 +26,6 @@ namespace AppWebApi.Controllers
         readonly DatabaseConnections _dbConnections = null;
         readonly IAdminService _service;
 
-        //GET: api/admin/connectionstring
-        [HttpGet()]
-        [ActionName("ConnectionString")]
-        [ProducesResponseType(200, Type = typeof(string))]
-        public IActionResult ConnectionString()
-        {
-            try
-            {
-                var connectionString = _configuration.GetConnectionString("SqlServerDocker");
-
-                _logger.LogInformation($"{nameof(ConnectionString)}:\n{JsonConvert.SerializeObject(connectionString)}");
-                return Ok(connectionString);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{nameof(ConnectionString)}: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
-        }
-        
         //GET: api/admin/environment
         [HttpGet()]
         [ActionName("Environment")]
@@ -65,9 +44,8 @@ namespace AppWebApi.Controllers
                 _logger.LogError($"{nameof(Environment)}: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-        }
-        
-        //GET: api/admin/version
+         }
+
         [HttpGet()]
         [ActionName("Version")]
         [ProducesResponseType(typeof(VersionOptions), 200)]
@@ -75,6 +53,7 @@ namespace AppWebApi.Controllers
         {
             try
             {
+                _logger.LogInformation($"{nameof(Version)}:\n{JsonConvert.SerializeObject(_versionOptions)}");
                 return Ok(_versionOptions);
             }
             catch (Exception ex)
@@ -83,20 +62,19 @@ namespace AppWebApi.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
         //GET: api/admin/seed?count={count}
         [HttpGet()]
         [ActionName("Seed")]
         [ProducesResponseType(200, Type = typeof(string))]
         [ProducesResponseType(400, Type = typeof(string))]
-        public async Task<IActionResult> Seed()
+       public async Task<IActionResult> Seed(int nrItems = 10)
         {
             try
             {
                 _logger.LogInformation($"{nameof(Seed)}");
-                await _service.SeedAsync();
+                await _service.SeedAsync(nrItems);
 
-                return Ok("Seeding completed successfully");
+                return Ok($"Seeded {nrItems} items successfully");
             }
             catch (Exception ex)
             {
@@ -119,6 +97,7 @@ namespace AppWebApi.Controllers
             return Ok("No messages in log");
         }
 
+
         public AdminController(ILogger<AdminController> logger,
                     IConfiguration configuration,
                     IOptions<DbConnectionSetsOptions> dbSetOptions,
@@ -140,7 +119,6 @@ namespace AppWebApi.Controllers
             _dbConnections = dbConnections;
 
             _service = service;
-
         }
     }
 }

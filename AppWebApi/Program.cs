@@ -1,11 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-using Configuration;
-using Configuration.Options;
-using DbContext;
+﻿using Configuration;
+using Configuration.Extensions;
+using DbContext.Extensions;
 using DbRepos;
-using Services;
 
+using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,64 +22,14 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 builder.Services.AddEndpointsApiExplorer();
 
-#region Initializing the standard sw stack
-//using user secrets
-//You dont need to use the assembly (reflection) to access user secrets at runtime
-//But you need to use the assembly (reflection) to access user secrets at design time (efc migrations)
-//In later branches this code is refactored into a configuration extension that is used both at design time and runtime
-//to switch between user secrets (development) and azure key vault (production)
-var currentDir = Directory.GetCurrentDirectory();
-var assembly = System.Reflection.Assembly.Load("Configuration");
-builder.Configuration.SetBasePath(Path.Combine(currentDir, "../AppWebApi"))
-        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-        .AddUserSecrets(assembly);
-
-// adding options patterns to read appsettings and user secrets
-builder.Services.Configure<AesEncryptionOptions>(
-    options => builder.Configuration.GetSection(AesEncryptionOptions.Position).Bind(options));
-
-// Registering encryption service
-builder.Services.AddTransient<Encryptions>();
-
-builder.Services.Configure<JwtOptions>(
-    options => builder.Configuration.GetSection(JwtOptions.Position).Bind(options));
-
-// adding options and service for multiple Database connections and their respective DbContexts
-builder.Services.Configure<DbConnectionSetsOptions>(
-    options => builder.Configuration.GetSection(DbConnectionSetsOptions.Position).Bind(options));
-
-// Registering database connections service
-builder.Services.AddSingleton<DatabaseConnections>();
-
-// adding version info
-builder.Services.Configure<VersionOptions>(options =>VersionOptions.ReadFromAssembly(options));
-
-//Inject Custom logger, this will also register the InMemoryLoggerProvider logger
-//hence, AddLogging should not be used here
-builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
-
-// adding DbContexts
-builder.Services.AddDbContext<MainDbContext>(options =>
-{
-    // SQLSERVER
-    //var connectionString = builder.Configuration["ConnectionStrings:SqlServerDocker"];  //alternative to below
-    var connectionString = builder.Configuration.GetConnectionString("SqlServerDocker");
-    options.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
-    // SQLSERVER END
-
-    // MYSQL
-//    var connectionString = builder.Configuration.GetConnectionString("MySqlDocker");
-//    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-//      b => b.SchemaBehavior(Microting.EntityFrameworkCore.MySql.Infrastructure.MySqlSchemaBehavior.Translate, (schema, table) => $"{schema}_{table}"));
-    // MYSQL END
-
-    // POSTGRESQL
-//    var connectionString = builder.Configuration.GetConnectionString("PostgreSqlDocker");
-//    options.UseNpgsql(connectionString);
-    // POSTGRESQL END
-});
+#region Initializing the standard sw stack using extensions
+builder.Configuration.AddSecrets(builder.Environment);
+builder.Services.AddEncryptions(builder.Configuration);
+builder.Services.AddDatabaseConnections(builder.Configuration);
+builder.Services.AddVersionInfo();
+builder.Services.AddInMemoryLogger();
+builder.Services.AddUserBasedDbContext();
 #endregion
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(c =>
@@ -95,8 +43,15 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v2.0",
 #endif
         Description = "This is an API used in Seido's various software developer training courses."
+        + $"<br>DataSet: {builder.Configuration["DatabaseConnections:UseDataSetWithTag"]}"
+        + $"<br>DefaultDataUser: {builder.Configuration["DatabaseConnections:DefaultDataUser"]}"
     });
 });
+
+
+
+//Add InMemoryLoggerProvider logger
+builder.Services.AddInMemoryLogger();
 
 //Inject DbRepos and Services
 builder.Services.AddScoped<AdminDbRepos>();

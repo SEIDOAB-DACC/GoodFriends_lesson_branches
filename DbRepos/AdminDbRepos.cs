@@ -16,7 +16,7 @@ public class AdminDbRepos
     private Encryptions _encryptions;
     private readonly MainDbContext _dbContext;
 
-    public async Task SeedAsync()
+    public async Task SeedAsync(int nrItems)
     {
         //Create a seeder
         var fn = Path.GetFullPath(_seedSource);
