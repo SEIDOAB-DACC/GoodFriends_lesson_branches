@@ -8,14 +8,20 @@ using Models;
 
 namespace DbModels;
 
+[Table("Addresses", Schema = "supusr")]
+[Index(nameof(StreetAddress), nameof(ZipCode), nameof(City), nameof(Country), IsUnique = true)]
 sealed public class AddressDbM : Address, IEquatable<AddressDbM>
 {
     [Key]     
     public override Guid AddressId { get; set; }
 
+    [Required]
     public override string StreetAddress { get; set; }
+    [Required]
     public override int ZipCode { get; set; }
+    [Required]
     public override string City { get; set; }
+    [Required]
     public override string Country { get; set; }
 
     #region implementing IEquatable
@@ -27,9 +33,8 @@ sealed public class AddressDbM : Address, IEquatable<AddressDbM>
     #endregion
 
     #region implementing entity Navigation properties when model is using interfaces in the relationships between models
-    [NotMapped] 
+    [NotMapped]
     public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-
     [JsonIgnore]
     public List<FriendDbM> FriendsDbM { get; set; } = null;
     #endregion

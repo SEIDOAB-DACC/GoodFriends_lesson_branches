@@ -9,10 +9,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace DbContext.Migrations.mysqlDbContext
+namespace DbContext.Migrations.SqlServerDbContext
 {
-    [DbContext(typeof(MainDbContext.MySqlDbContext))]
-    [Migration("20250816155518_miInitial")]
+    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
+    [Migration("20251022100945_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -20,24 +20,27 @@ namespace DbContext.Migrations.mysqlDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.AddressDbM", b =>
                 {
                     b.Property<Guid>("AddressId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("StreetAddress")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
@@ -45,25 +48,29 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("AddressId");
 
-                    b.ToTable("Addresses");
+                    b.HasIndex("StreetAddress", "ZipCode", "City", "Country")
+                        .IsUnique();
+
+                    b.ToTable("Addresses", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("AddressId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("Birthday")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("LastName")
@@ -73,17 +80,21 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasIndex("AddressId");
 
-                    b.ToTable("Friends");
+                    b.HasIndex("FirstName", "LastName");
+
+                    b.HasIndex("LastName", "FirstName");
+
+                    b.ToTable("Friends", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.PetDbM", b =>
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("FriendId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Kind")
                         .HasColumnType("int");
@@ -92,6 +103,7 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
@@ -105,7 +117,7 @@ namespace DbContext.Migrations.mysqlDbContext
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");
@@ -115,22 +127,22 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("QuoteId");
 
-                    b.ToTable("Quotes");
+                    b.ToTable("Quotes", "supusr");
                 });
 
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
                 {
                     b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
 
                     b.HasIndex("QuotesDbMQuoteId");
 
-                    b.ToTable("FriendDbMQuoteDbM");
+                    b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>

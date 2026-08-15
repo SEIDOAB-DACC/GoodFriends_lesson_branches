@@ -29,12 +29,15 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("StreetAddress")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
@@ -42,7 +45,10 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("AddressId");
 
-                    b.ToTable("Addresses");
+                    b.HasIndex("StreetAddress", "ZipCode", "City", "Country")
+                        .IsUnique();
+
+                    b.ToTable("Addresses", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -51,7 +57,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AddressDbMAddressId")
+                    b.Property<Guid?>("AddressId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("Birthday")
@@ -61,6 +67,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("LastName")
@@ -68,9 +75,13 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("FriendId");
 
-                    b.HasIndex("AddressDbMAddressId");
+                    b.HasIndex("AddressId");
 
-                    b.ToTable("Friends");
+                    b.HasIndex("FirstName", "LastName");
+
+                    b.HasIndex("LastName", "FirstName");
+
+                    b.ToTable("Friends", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.PetDbM", b =>
@@ -79,7 +90,7 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("FriendDbMFriendId")
+                    b.Property<Guid>("FriendId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Kind")
@@ -89,13 +100,14 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
 
-                    b.HasIndex("FriendDbMFriendId");
+                    b.HasIndex("FriendId");
 
-                    b.ToTable("Pets");
+                    b.ToTable("Pets", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.QuoteDbM", b =>
@@ -112,7 +124,7 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("QuoteId");
 
-                    b.ToTable("Quotes");
+                    b.ToTable("Quotes", "supusr");
                 });
 
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
@@ -127,14 +139,14 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasIndex("QuotesDbMQuoteId");
 
-                    b.ToTable("FriendDbMQuoteDbM");
+                    b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.HasOne("DbModels.AddressDbM", "AddressDbM")
                         .WithMany("FriendsDbM")
-                        .HasForeignKey("AddressDbMAddressId");
+                        .HasForeignKey("AddressId");
 
                     b.Navigation("AddressDbM");
                 });
@@ -143,7 +155,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.HasOne("DbModels.FriendDbM", "FriendDbM")
                         .WithMany("PetsDbM")
-                        .HasForeignKey("FriendDbMFriendId");
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("FriendDbM");
                 });

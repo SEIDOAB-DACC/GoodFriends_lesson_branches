@@ -31,4 +31,3 @@ To create the AppWebApi
       Admin/Environment, Admin/Version and Admin/Log
 
 4. Use From Azure Data Studio to explore the created database and it's schema 
-   Notice that FK and PK are now implemented in the database according to the model realtionships (navigation props)

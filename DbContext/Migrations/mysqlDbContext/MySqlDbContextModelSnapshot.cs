@@ -17,7 +17,7 @@ namespace DbContext.Migrations.mysqlDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -29,12 +29,15 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("char(36)");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("StreetAddress")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
@@ -42,7 +45,10 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("AddressId");
 
-                    b.ToTable("Addresses");
+                    b.HasIndex("StreetAddress", "ZipCode", "City", "Country")
+                        .IsUnique();
+
+                    b.ToTable("Addresses", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -61,6 +67,7 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("LastName")
@@ -70,7 +77,11 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasIndex("AddressId");
 
-                    b.ToTable("Friends");
+                    b.HasIndex("FirstName", "LastName");
+
+                    b.HasIndex("LastName", "FirstName");
+
+                    b.ToTable("Friends", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.PetDbM", b =>
@@ -89,6 +100,7 @@ namespace DbContext.Migrations.mysqlDbContext
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
@@ -112,7 +124,7 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasKey("QuoteId");
 
-                    b.ToTable("Quotes");
+                    b.ToTable("Quotes", "supusr");
                 });
 
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
@@ -127,7 +139,7 @@ namespace DbContext.Migrations.mysqlDbContext
 
                     b.HasIndex("QuotesDbMQuoteId");
 
-                    b.ToTable("FriendDbMQuoteDbM");
+                    b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>

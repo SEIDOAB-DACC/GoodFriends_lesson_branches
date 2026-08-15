@@ -23,6 +23,7 @@ public class Friend : IFriend
     public virtual List<IQuote> Quotes { get; set; } = null;
 
 
+
     #region contructors
     public Friend() { }
 

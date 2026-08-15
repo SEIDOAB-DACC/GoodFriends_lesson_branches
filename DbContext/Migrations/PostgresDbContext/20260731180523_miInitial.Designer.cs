@@ -3,16 +3,16 @@ using System;
 using DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DbContext.Migrations.SqlServerDbContext
+namespace DbContext.Migrations.PostgresDbContext
 {
-    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
-    [Migration("20251022100512_miInitial")]
+    [DbContext(typeof(MainDbContext.PostgresDbContext))]
+    [Migration("20260731180523_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -20,50 +20,57 @@ namespace DbContext.Migrations.SqlServerDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.8")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.AddressDbM", b =>
                 {
                     b.Property<Guid>("AddressId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("StreetAddress")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("ZipCode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("AddressId");
 
-                    b.ToTable("Addresses");
+                    b.HasIndex("StreetAddress", "ZipCode", "City", "Country")
+                        .IsUnique();
+
+                    b.ToTable("Addresses", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.Property<Guid>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AddressDbMAddressId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<Guid?>("AddressId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("Birthday")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("LastName")
@@ -71,41 +78,46 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("FriendId");
 
-                    b.HasIndex("AddressDbMAddressId");
+                    b.HasIndex("AddressId");
 
-                    b.ToTable("Friends");
+                    b.HasIndex("FirstName", "LastName");
+
+                    b.HasIndex("LastName", "FirstName");
+
+                    b.ToTable("Friends", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.PetDbM", b =>
                 {
                     b.Property<Guid>("PetId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
-                    b.Property<Guid?>("FriendDbMFriendId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<Guid>("FriendId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Mood")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("PetId");
 
-                    b.HasIndex("FriendDbMFriendId");
+                    b.HasIndex("FriendId");
 
-                    b.ToTable("Pets");
+                    b.ToTable("Pets", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.QuoteDbM", b =>
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");
@@ -115,29 +127,29 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("QuoteId");
 
-                    b.ToTable("Quotes");
+                    b.ToTable("Quotes", "supusr");
                 });
 
             modelBuilder.Entity("FriendDbMQuoteDbM", b =>
                 {
                     b.Property<Guid>("FriendsDbMFriendId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("QuotesDbMQuoteId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("FriendsDbMFriendId", "QuotesDbMQuoteId");
 
                     b.HasIndex("QuotesDbMQuoteId");
 
-                    b.ToTable("FriendDbMQuoteDbM");
+                    b.ToTable("FriendDbMQuoteDbM", "supusr");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
                     b.HasOne("DbModels.AddressDbM", "AddressDbM")
                         .WithMany("FriendsDbM")
-                        .HasForeignKey("AddressDbMAddressId");
+                        .HasForeignKey("AddressId");
 
                     b.Navigation("AddressDbM");
                 });
@@ -146,7 +158,9 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     b.HasOne("DbModels.FriendDbM", "FriendDbM")
                         .WithMany("PetsDbM")
-                        .HasForeignKey("FriendDbMFriendId");
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("FriendDbM");
                 });

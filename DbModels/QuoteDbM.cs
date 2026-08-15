@@ -7,6 +7,7 @@ using Models;
 
 namespace DbModels;
 
+[Table("Quotes", Schema = "supusr")]
 sealed public class QuoteDbM : Quote, IEquatable<QuoteDbM>
 {
     [Key]
@@ -15,7 +16,6 @@ sealed public class QuoteDbM : Quote, IEquatable<QuoteDbM>
     #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [NotMapped]
     public override List<IFriend> Friends { get => FriendsDbM?.ToList<IFriend>(); set => new NotImplementedException(); }
-
     [JsonIgnore]
     public List<FriendDbM> FriendsDbM { get; set; } = null;
     #endregion
