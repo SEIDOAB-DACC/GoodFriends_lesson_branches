@@ -6,6 +6,7 @@ using Configuration;
 using DbModels;
 using Microsoft.Extensions.Hosting.Internal;
 using DbContext.Extensions;
+using Models;
 
 namespace DbContext;
 
@@ -24,7 +25,8 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
 #endif
 
     #region C# model of database tables
-    public DbSet<QuoteDbM> Quotes { get; set; }
+    public DbSet<ZooDbM> Zoos { get; set; }
+    public DbSet<AnimalDbM> Animals { get; set; }
     #endregion
 
     #region constructors

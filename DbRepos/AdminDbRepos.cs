@@ -18,16 +18,29 @@ public class AdminDbRepos
 
     public async Task SeedAsync(int nrItems)
     {
-        //Create a seeder
-        var fn = Path.GetFullPath(_seedSource);
-        var seeder = new SeedGenerator(fn);
+
+        var zoos = new List<ZooDbM>
+        {
+            new ZooDbM { ZooId = Guid.NewGuid(), Name = "Central Zoo", City = "Metropolis", Country = "Freedonia" },
+            new ZooDbM { ZooId = Guid.NewGuid(), Name = "Safari Park", City = "Gotham", Country = "Freedonia" },
+            new ZooDbM { ZooId = Guid.NewGuid(), Name = "Wildlife Reserve", City = "Star City", Country = "Freedonia" }
+        };
+
+        foreach (var zoo in zoos)
+        {
+            zoo.AnimalsDbM = new List<AnimalDbM>
+            {
+                new AnimalDbM { AnimalId = Guid.NewGuid(), Name = "Asterix", Kind = Models.AnimalKind.Zebra, Mood = Models.AnimalMood.Happy },
+                new AnimalDbM { AnimalId = Guid.NewGuid(), Name = "Obelix", Kind = Models.AnimalKind.Leopard, Mood = Models.AnimalMood.Happy },
+                new AnimalDbM { AnimalId = Guid.NewGuid(), Name = "Dogmatix", Kind = Models.AnimalKind.Elephant, Mood = Models.AnimalMood.Happy },
+            };
+        }
 
         //remove existing quotes in the database
-        _dbContext.Quotes.RemoveRange(_dbContext.Quotes);
+        //_dbContext.Zoos.RemoveRange(_dbContext.Zoos);
 
-        //Seeding new quotes into the database
-        var quotes = seeder.AllQuotes.Select(q => new QuoteDbM(q)).ToList();
-        _dbContext.Quotes.AddRange(quotes);
+        //Seeding new zoos into the database
+        _dbContext.Zoos.AddRange(zoos);
 
         //Save changes to the database
         await _dbContext.SaveChangesAsync();

@@ -17,26 +17,71 @@ namespace DbContext.Migrations.SqlServerDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DbModels.QuoteDbM", b =>
+            modelBuilder.Entity("DbModels.AnimalDbM", b =>
                 {
-                    b.Property<Guid>("QuoteId")
+                    b.Property<Guid>("AnimalId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Author")
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mood")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoodString")
                         .HasColumnType("varchar(200)");
 
-                    b.Property<string>("QuoteText")
+                    b.Property<string>("Name")
                         .HasColumnType("varchar(200)");
 
-                    b.HasKey("QuoteId");
+                    b.Property<Guid?>("ZooDbMZooId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.ToTable("Quotes");
+                    b.HasKey("AnimalId");
+
+                    b.HasIndex("ZooDbMZooId");
+
+                    b.ToTable("Animals");
+                });
+
+            modelBuilder.Entity("DbModels.ZooDbM", b =>
+                {
+                    b.Property<Guid>("ZooId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("City")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("ZooId");
+
+                    b.ToTable("Zoos");
+                });
+
+            modelBuilder.Entity("DbModels.AnimalDbM", b =>
+                {
+                    b.HasOne("DbModels.ZooDbM", "ZooDbM")
+                        .WithMany("AnimalsDbM")
+                        .HasForeignKey("ZooDbMZooId");
+
+                    b.Navigation("ZooDbM");
+                });
+
+            modelBuilder.Entity("DbModels.ZooDbM", b =>
+                {
+                    b.Navigation("AnimalsDbM");
                 });
 #pragma warning restore 612, 618
         }
