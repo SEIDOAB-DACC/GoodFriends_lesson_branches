@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Configuration/Configuration.csproj" />
+  <Project Path="Services/Services.csproj" />
   <Project Path="AppWebApi/AppWebApi.csproj" />
   <Project Path="Models/Models.csproj" />
 </Solution>

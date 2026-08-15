@@ -1,5 +1,6 @@
 ﻿using Configuration;
 using Configuration.Options;
+using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,10 +76,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
-//Inject Custom logger, this will also register the InMemoryLoggerProvider logger
-//hence, AddLogging should not be used here
-builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
+//Inject Services
+builder.Services.AddScoped<IAdminService, AdminServiceDb>();
 
 var app = builder.Build();
 
