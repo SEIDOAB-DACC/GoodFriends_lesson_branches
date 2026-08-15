@@ -23,7 +23,8 @@ public class FriendsServiceDb : IFriendsService
     //Simple 1:1 calls in this case, but as Services expands, this will no longer need to be the case
     public Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize) => _repo.ReadFriendsAsync(seeded, flat, filter, pageNumber, pageSize);
     public Task<ResponseItemDto<IFriend>> ReadFriendAsync(Guid id, bool flat) => _repo.ReadFriendAsync(id, flat);
-     public Task<ResponseItemDto<IFriend>> UpdateFriendAsync(FriendCuDto item) => _repo.UpdateFriendAsync(item);
-
+    public Task<ResponseItemDto<IFriend>> DeleteFriendAsync(Guid id) => _repo.DeleteFriendAsync(id);
+    public Task<ResponseItemDto<IFriend>> UpdateFriendAsync(FriendCuDto item) => _repo.UpdateFriendAsync(item);
+    public Task<ResponseItemDto<IFriend>> CreateFriendAsync(FriendCuDto item) => _repo.CreateFriendAsync(item);
 }
 

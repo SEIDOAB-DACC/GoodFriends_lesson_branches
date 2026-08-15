@@ -48,8 +48,27 @@ sealed public class AddressDbM : Address, ISeed<AddressDbM>, IEquatable<AddressD
     }
     #endregion
 
+    #region Update from DTO
+    public AddressDbM UpdateFromDTO(AddressCuDto org)
+    {
+        if (org == null) return null;
+
+        StreetAddress = org.StreetAddress;
+        ZipCode = org.ZipCode;
+        City = org.City;
+        Country = org.Country;
+
+        return this;
+    }
+    #endregion
+
     #region constructors
     public AddressDbM() { }
+    public AddressDbM(AddressCuDto org)
+    {
+        AddressId = Guid.NewGuid();
+        UpdateFromDTO(org);
+    }
     #endregion
 }
 

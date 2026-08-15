@@ -71,7 +71,33 @@ namespace AppWebApi.Controllers
             }
         }
 
-        //GET: api/friends/readitem
+        //DELETE: api/friends/deleteitem/id
+        [HttpDelete("{id}")]
+        [ActionName("DeleteItem")]
+        [ProducesResponseType(200, Type = typeof(IFriend))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> DeleteItem(string id)
+        {
+            try
+            {
+                var idArg = Guid.Parse(id);
+
+                _logger.LogInformation($"{nameof(DeleteItem)}: {nameof(idArg)}: {idArg}");
+                
+                var item = await _service.DeleteFriendAsync(idArg);
+                if (item == null) throw new ArgumentException ($"Item with id {id} does not exist");
+        
+                _logger.LogInformation($"item {idArg} deleted");
+                return Ok(item);                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(DeleteItem)}: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        //GET: api/friends/readitemdto
         [HttpGet()]
         [ActionName("ReadItemDto")]
         [ProducesResponseType(200, Type = typeof(FriendCuDto))]
@@ -86,9 +112,15 @@ namespace AppWebApi.Controllers
                 _logger.LogInformation($"{nameof(ReadItemDto)}: {nameof(idArg)}: {idArg}");
 
                 var item = await _service.ReadFriendAsync(idArg, false);
-                if (item == null) throw new ArgumentException ($"Item with id {id} does not exist");
+                if (item == null) throw new ArgumentException($"Item with id {id} does not exist");
 
-                return Ok(new FriendCuDto(item.Item));         
+                return Ok(
+                    new ResponseItemDto<FriendCuDto>() {
+#if DEBUG
+                    ConnectionString = item.ConnectionString,
+#endif
+                    Item = new FriendCuDto(item.Item)
+                });
             }
             catch (Exception ex)
             {
@@ -110,13 +142,13 @@ namespace AppWebApi.Controllers
                 var idArg = Guid.Parse(id);
 
                 _logger.LogInformation($"{nameof(UpdateItem)}: {nameof(idArg)}: {idArg}");
-
+                
                 if (item.FriendId != idArg) throw new ArgumentException("Id mismatch");
 
                 var _item = await _service.UpdateFriendAsync(item);
                 _logger.LogInformation($"item {idArg} updated");
-
-                return Ok(_item);
+               
+                return Ok(_item);             
             }
             catch (Exception ex)
             {
@@ -125,6 +157,29 @@ namespace AppWebApi.Controllers
             }
         }
 
+        //POST: api/friends/createitem
+        //Body: csFriendCUdto in Json
+        [HttpPost()]
+        [ActionName("CreateItem")]
+        [ProducesResponseType(200, Type = typeof(IFriend))]
+        [ProducesResponseType(400, Type = typeof(string))]
+        public async Task<IActionResult> CreateItem([FromBody] FriendCuDto item)
+        {
+            try
+            {
+                _logger.LogInformation($"{nameof(CreateItem)}:");
+                
+                var _item = await _service.CreateFriendAsync(item);
+                _logger.LogInformation($"item {_item.Item.FriendId} created");
+
+                return Ok(_item);       
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{nameof(CreateItem)}: {ex.Message}");
+                return BadRequest($"Could not create. Error {ex.Message}");
+            }
+        }
 
         public FriendsController(IFriendsService service, ILogger<FriendsController> logger)
         {

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DbContext.Migrations.SqlServerDbContext
+namespace DbContext.Migrations.PostgresDbContext
 {
     /// <inheritdoc />
     public partial class miInitial : Migration
@@ -19,12 +19,12 @@ namespace DbContext.Migrations.SqlServerDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    AddressId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AddressId = table.Column<Guid>(type: "uuid", nullable: false),
                     StreetAddress = table.Column<string>(type: "varchar(200)", nullable: false),
-                    ZipCode = table.Column<int>(type: "int", nullable: false),
+                    ZipCode = table.Column<int>(type: "integer", nullable: false),
                     City = table.Column<string>(type: "varchar(200)", nullable: false),
                     Country = table.Column<string>(type: "varchar(200)", nullable: false),
-                    Seeded = table.Column<bool>(type: "bit", nullable: false)
+                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -36,10 +36,10 @@ namespace DbContext.Migrations.SqlServerDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    QuoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    QuoteId = table.Column<Guid>(type: "uuid", nullable: false),
                     QuoteText = table.Column<string>(type: "varchar(200)", nullable: true),
                     Author = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Seeded = table.Column<bool>(type: "bit", nullable: false)
+                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -51,13 +51,13 @@ namespace DbContext.Migrations.SqlServerDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    FriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FriendId = table.Column<Guid>(type: "uuid", nullable: false),
                     FirstName = table.Column<string>(type: "varchar(200)", nullable: false),
-                    AddressId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AddressId = table.Column<Guid>(type: "uuid", nullable: true),
                     LastName = table.Column<string>(type: "varchar(200)", nullable: true),
                     Email = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Birthday = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Seeded = table.Column<bool>(type: "bit", nullable: false)
+                    Birthday = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -72,37 +72,12 @@ namespace DbContext.Migrations.SqlServerDbContext
                 });
 
             migrationBuilder.CreateTable(
-                name: "CreditCardDbM",
-                columns: table => new
-                {
-                    CreditCardId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CardHolderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Issuer = table.Column<int>(type: "int", nullable: false),
-                    Number = table.Column<string>(type: "varchar(200)", nullable: true),
-                    ExpirationYear = table.Column<string>(type: "varchar(200)", nullable: true),
-                    ExpirationMonth = table.Column<string>(type: "varchar(200)", nullable: true),
-                    EncryptedToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Seeded = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CreditCardDbM", x => x.CreditCardId);
-                    table.ForeignKey(
-                        name: "FK_CreditCardDbM_Friends_CardHolderId",
-                        column: x => x.CardHolderId,
-                        principalSchema: "supusr",
-                        principalTable: "Friends",
-                        principalColumn: "FriendId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr",
                 columns: table => new
                 {
-                    FriendsDbMFriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    QuotesDbMQuoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    FriendsDbMFriendId = table.Column<Guid>(type: "uuid", nullable: false),
+                    QuotesDbMQuoteId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -128,12 +103,14 @@ namespace DbContext.Migrations.SqlServerDbContext
                 schema: "supusr",
                 columns: table => new
                 {
-                    PetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    FriendId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FriendId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "varchar(200)", nullable: false),
-                    Kind = table.Column<int>(type: "int", nullable: false),
-                    Mood = table.Column<int>(type: "int", nullable: false),
-                    Seeded = table.Column<bool>(type: "bit", nullable: false)
+                    strKind = table.Column<string>(type: "varchar(200)", nullable: true),
+                    strMood = table.Column<string>(type: "varchar(200)", nullable: true),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    Mood = table.Column<int>(type: "integer", nullable: false),
+                    Seeded = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -153,11 +130,6 @@ namespace DbContext.Migrations.SqlServerDbContext
                 table: "Addresses",
                 columns: new[] { "StreetAddress", "ZipCode", "City", "Country" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CreditCardDbM_CardHolderId",
-                table: "CreditCardDbM",
-                column: "CardHolderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FriendDbMQuoteDbM_QuotesDbMQuoteId",
@@ -193,9 +165,6 @@ namespace DbContext.Migrations.SqlServerDbContext
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "CreditCardDbM");
-
             migrationBuilder.DropTable(
                 name: "FriendDbMQuoteDbM",
                 schema: "supusr");

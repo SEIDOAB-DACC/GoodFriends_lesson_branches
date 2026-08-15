@@ -24,6 +24,11 @@ sealed public class QuoteDbM : Quote, ISeed<QuoteDbM>, IEquatable<QuoteDbM>
     #region constructors
     public QuoteDbM() : base() { }
     public QuoteDbM(SeededQuote goodQuote) : base(goodQuote) { }
+    public QuoteDbM(QuoteCuDto org)
+    {
+        QuoteId = Guid.NewGuid();
+        UpdateFromDTO(org);
+    }
     #endregion
 
     #region implementing IEquatable
@@ -36,6 +41,18 @@ sealed public class QuoteDbM : Quote, ISeed<QuoteDbM>, IEquatable<QuoteDbM>
     public override QuoteDbM Seed(SeedGenerator sgen)
     {
         base.Seed(sgen);
+        return this;
+    }
+    #endregion
+
+    #region Update from DTO
+    public Quote UpdateFromDTO(QuoteCuDto org)
+    {
+        if (org == null) return null;
+
+        Author = org.Author;
+        QuoteText = org.Quote;
+
         return this;
     }
     #endregion

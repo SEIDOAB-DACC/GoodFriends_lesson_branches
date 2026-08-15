@@ -24,6 +24,57 @@ Controllers → Services → DbRepos → Database
 
 ## CRUD Implementation Details
 
+### Read Operations (R in CRUD)
+
+#### 1. Read Multiple Items (Friends List)
+**Flow**: `FriendsController.Read()` → `FriendsServiceDb.ReadFriendsAsync()` → `FriendsDbRepos.ReadFriendsAsync()`
+
+**Controller Endpoint**:
+```csharp
+[HttpGet()]
+[ActionName("Read")]
+public async Task<IActionResult> Read(string seeded = "true", string flat = "true",
+    string filter = null, string pageNr = "0", string pageSize = "10")
+```
+
+**Key Features**:
+- **Pagination**: Supports page number and page size
+- **Filtering**: Filter by first name or last name
+- **Flat vs Deep Loading**: Choice between loading navigation properties or not
+- **Seeded Data Toggle**: Filter between seeded and user-created data
+
+**DbRepos Implementation**:
+```csharp
+public async Task<ResponsePageDto<IFriend>> ReadFriendsAsync(bool seeded, bool flat, string filter, int pageNumber, int pageSize)
+{
+    IQueryable<FriendDbM> query;
+    if (flat)
+    {
+        query = _dbContext.Friends.AsNoTracking();
+    }
+    else
+    {
+        query = _dbContext.Friends.AsNoTracking()
+            .Include(i => i.AddressDbM)
+            .Include(i => i.PetsDbM)
+            .Include(i => i.QuotesDbM);
+    }
+    // ... filtering, paging, and execution
+}
+```
+
+**Performance Optimizations**:
+- Uses `AsNoTracking()` for read-only operations
+- Conditional `Include()` statements for navigation properties
+- Server-side filtering and paging
+
+#### 2. Read Single Item
+**Flow**: `FriendsController.ReadItem()` → `FriendsServiceDb.ReadFriendAsync()` → `FriendsDbRepos.ReadFriendAsync()`
+
+**Navigation Property Loading**:
+- **Flat Mode**: Only loads the friend entity
+- **Deep Mode**: Loads all related entities (Address, Pets, Quotes)
+
 ### Create Operations (C in CRUD)
 
 #### DTO-Based Creation Process
@@ -217,6 +268,39 @@ public FriendDbM UpdateFromDTO(FriendCuDto org)
 }
 ```
 
+### Delete Operations (D in CRUD)
+
+#### Simple Delete Process
+**Flow**: `FriendsController.DeleteItem()` → `FriendsServiceDb.DeleteFriendAsync()` → `FriendsDbRepos.DeleteFriendAsync()`
+
+**Controller Endpoint**:
+```csharp
+[HttpDelete("{id}")]
+[ActionName("DeleteItem")]
+public async Task<IActionResult> DeleteItem(string id)
+```
+
+**DbRepos Delete Process**:
+```csharp
+public async Task<ResponseItemDto<IFriend>> DeleteFriendAsync(Guid id)
+{
+    // 1. Find the entity
+    var item = await _dbContext.Friends
+        .Where(i => i.FriendId == id)
+        .FirstOrDefaultAsync<FriendDbM>();
+
+    if (item == null) throw new ArgumentException($"Item {id} is not existing");
+
+    // 2. Remove from context
+    _dbContext.Friends.Remove(item);
+
+    // 3. Save changes
+    await _dbContext.SaveChangesAsync();
+
+    // 4. Return deleted item
+    return new ResponseItemDto<IFriend>() { Item = item };
+}
+```
 
 ## Key Design Patterns and Features
 

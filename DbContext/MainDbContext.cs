@@ -38,8 +38,9 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
     //Here we can modify the migration building
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        
+        #region override modelbuilder
         // This is where we can modify the model builder to add custom configurations
+/*
         modelBuilder.Entity("DbModels.PetDbM", b =>
         {
             b.HasOne("DbModels.FriendDbM", "FriendDbM")
@@ -54,12 +55,8 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
                 //.OnDelete(DeleteBehavior.SetNull);
 
             b.Navigation("FriendDbM");
-            
-            // Check constraint to enforce Name must be either 'Max' or 'Charlie'
-            // Using quoted column name for PostgreSQL case-sensitivity
-            //b.ToTable(t => t.HasCheckConstraint("CK_PetDbM_Name", "\"Name\" IN ('Max', 'Charlie')"));
         });
-        
+*/        
         modelBuilder.Entity("DbModels.FriendDbM", b =>
         {
             b.HasOne("DbModels.AddressDbM", "AddressDbM")
@@ -69,6 +66,7 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
 
             b.Navigation("AddressDbM");
         });
+        #endregion
         
         base.OnModelCreating(modelBuilder);
     }
@@ -103,10 +101,7 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //Encryption Tokens can be very long
-            modelBuilder.Entity<CreditCardDbM>()
-                .Property(a => a.EncryptedToken).HasColumnType("nvarchar(max)");
-
+            //Add your own modelling based on done migrations
             base.OnModelCreating(modelBuilder);
         }
     }
@@ -138,15 +133,6 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
             base.ConfigureConventions(configurationBuilder);
 
         }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // Set EnryptedToken to longtext for MySQL
-            modelBuilder.Entity<CreditCardDbM>()
-                .Property(a => a.EncryptedToken).HasColumnType("longtext");
-
-            base.OnModelCreating(modelBuilder);
-        }
     }
 
     public class PostgresDbContext : MainDbContext
@@ -171,15 +157,6 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
         {
             configurationBuilder.Properties<string>().HaveColumnType("varchar(200)");
             base.ConfigureConventions(configurationBuilder);
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // Set EnryptedToken to text for PostgreSQL
-            modelBuilder.Entity<CreditCardDbM>()
-                .Property(a => a.EncryptedToken).HasColumnType("text");
-
-            base.OnModelCreating(modelBuilder);
         }
     }
     #endregion

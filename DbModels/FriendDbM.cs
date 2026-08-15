@@ -14,9 +14,9 @@ namespace DbModels;
 [Index(nameof(LastName), nameof(FirstName))]
 sealed public class FriendDbM : Friend, ISeed<FriendDbM>
 {
-    [Key]
+    [Key]    
     public override Guid FriendId { get; set; }
-
+    
     [Required]
     public override string FirstName { get; set; }
 
@@ -35,17 +35,10 @@ sealed public class FriendDbM : Friend, ISeed<FriendDbM>
     [JsonIgnore]
     public List<PetDbM> PetsDbM { get; set; } = null;
 
-    [NotMapped]
+    [NotMapped] 
     public override List<IQuote> Quotes { get => QuotesDbM?.ToList<IQuote>(); set => new NotImplementedException(); }
     [JsonIgnore]
     public List<QuoteDbM> QuotesDbM { get; set; } = null;
-
-    [NotMapped]
-    public override List<ICreditCard> CreditCards { get => CreditCardsDbM?.ToList<ICreditCard>(); set => new NotImplementedException(); }
-
-    [JsonIgnore]
-    public List<CreditCardDbM> CreditCardsDbM { get; set; } = null;
-
     #endregion
 
     #region randomly seed this instance
@@ -56,19 +49,23 @@ sealed public class FriendDbM : Friend, ISeed<FriendDbM>
     }
     #endregion
 
-    #region constructors
-    public FriendDbM() { }
-    #endregion
-    
-        #region Update from DTO
+    #region Update from DTO
     public FriendDbM UpdateFromDTO(FriendCuDto org)
     {
         FirstName = org.FirstName;
         LastName = org.LastName;
         Birthday = org.Birthday;
-        Email = org.Email;
 
         return this;
+    }
+    #endregion
+
+    #region constructors
+    public FriendDbM() { }
+    public FriendDbM(FriendCuDto org)
+    {
+        FriendId = Guid.NewGuid();
+        UpdateFromDTO(org);
     }
     #endregion
 }

@@ -15,10 +15,23 @@ sealed public class PetDbM : Pet, ISeed<PetDbM>
 
     [JsonIgnore]
     public Guid FriendId { get; set; }  //Enforces Cascade Delete
-    //public Guid? FriendId { get; set; }  //Enforces Cascade NoAction
+    //public Guid? FriendId { get; set; }  //Enforces Cascade SetNull
 
     [Required]
     public override string Name { get; set; }
+
+    #region adding more readability to an enum type in the database
+    public string strKind
+    {
+        get => Kind.ToString();
+        set { }  //set is needed by EFC to include in the database, so I make it to do nothing
+    }
+    public string strMood
+    {
+        get => Mood.ToString();
+        set { } //set is needed by EFC to include in the database, so I make it to do nothing
+    }
+    #endregion
     
     #region implementing entity Navigation properties when model is using interfaces in the relationships between models
     [ForeignKey("FriendId")]     
@@ -36,8 +49,25 @@ sealed public class PetDbM : Pet, ISeed<PetDbM>
     }
     #endregion
 
+    #region Update from DTO
+    public PetDbM UpdateFromDTO(PetCuDto org)
+    {
+        if (org == null) return null;
+
+        Kind = org.Kind;
+        Mood = org.Mood;
+        Name = org.Name;
+
+        return this;
+    }
+    #endregion
 
     #region constructors
     public PetDbM() { }
+    public PetDbM(PetCuDto org)
+    {
+        PetId = Guid.NewGuid();
+        UpdateFromDTO(org);
+    }
     #endregion
 }

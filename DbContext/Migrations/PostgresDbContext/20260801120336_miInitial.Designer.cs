@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbContext.Migrations.PostgresDbContext
 {
     [DbContext(typeof(MainDbContext.PostgresDbContext))]
-    [Migration("20260801121641_miInitial")]
+    [Migration("20260801120336_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -55,40 +55,6 @@ namespace DbContext.Migrations.PostgresDbContext
                         .IsUnique();
 
                     b.ToTable("Addresses", "supusr");
-                });
-
-            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
-                {
-                    b.Property<Guid>("CreditCardId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CardHolderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EncryptedToken")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ExpirationMonth")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("ExpirationYear")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<int>("Issuer")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Number")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("CreditCardId");
-
-                    b.HasIndex("CardHolderId");
-
-                    b.ToTable("CreditCardDbM");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -149,6 +115,12 @@ namespace DbContext.Migrations.PostgresDbContext
                     b.Property<bool>("Seeded")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("strKind")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("strMood")
+                        .HasColumnType("varchar(200)");
+
                     b.HasKey("PetId");
 
                     b.HasIndex("FriendId");
@@ -189,17 +161,6 @@ namespace DbContext.Migrations.PostgresDbContext
                     b.HasIndex("QuotesDbMQuoteId");
 
                     b.ToTable("FriendDbMQuoteDbM", "supusr");
-                });
-
-            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
-                {
-                    b.HasOne("DbModels.FriendDbM", "CardHolderDbM")
-                        .WithMany("CreditCardsDbM")
-                        .HasForeignKey("CardHolderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CardHolderDbM");
                 });
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
@@ -245,8 +206,6 @@ namespace DbContext.Migrations.PostgresDbContext
 
             modelBuilder.Entity("DbModels.FriendDbM", b =>
                 {
-                    b.Navigation("CreditCardsDbM");
-
                     b.Navigation("PetsDbM");
                 });
 #pragma warning restore 612, 618
