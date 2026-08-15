@@ -15,8 +15,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Configuration\Configuration.csproj"/>
-    <ProjectReference Include="..\Models\Models.csproj"/>
-    <ProjectReference Include="..\Services\Services.csproj"/>
+    <ProjectReference Include="..\Configuration\Configuration.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\Models\Models.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\Services\Services.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
   </ItemGroup>
 </Project>

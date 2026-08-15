@@ -21,15 +21,19 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-#region Initializing the standard sw stack using extensions
+//adding support for several secret sources and database sources
+//to use either user secrets or azure key vault depending on UseAzureKeyVault tag in appsettings.json
 builder.Configuration.AddSecrets(builder.Environment);
+
+//use encryption and multiple Database connections and their respective DbContexts
 builder.Services.AddEncryptions(builder.Configuration);
 builder.Services.AddDatabaseConnections(builder.Configuration);
-builder.Services.AddVersionInfo();
-builder.Services.AddInMemoryLogger();
 builder.Services.AddUserBasedDbContext();
-#endregion
+
+// adding verion info
+builder.Services.AddVersionInfo();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(c =>

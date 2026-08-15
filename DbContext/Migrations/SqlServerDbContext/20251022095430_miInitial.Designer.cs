@@ -3,32 +3,38 @@ using System;
 using DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DbContext.Migrations.PostgresDbContext
+namespace DbContext.Migrations.SqlServerDbContext
 {
-    [DbContext(typeof(MainDbContext.PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
+    [Migration("20251022095430_miInitial")]
+    partial class miInitial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.CreditCardDbM", b =>
                 {
                     b.Property<Guid>("CreditCardId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CardHolderName")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("EncryptedToken")
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("ExpirationMonth")
@@ -38,13 +44,13 @@ namespace DbContext.Migrations.PostgresDbContext
                         .HasColumnType("varchar(200)");
 
                     b.Property<int>("Issuer")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Number")
                         .HasColumnType("varchar(200)");
 
                     b.Property<bool>("Seeded")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.HasKey("CreditCardId");
 

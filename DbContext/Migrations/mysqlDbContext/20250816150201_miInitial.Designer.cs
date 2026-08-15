@@ -9,10 +9,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace DbContext.Migrations.SqlServerDbContext
+namespace DbContext.Migrations.mysqlDbContext
 {
-    [DbContext(typeof(MainDbContext.SqlServerDbContext))]
-    [Migration("20260730133711_miInitial")]
+    [DbContext(typeof(MainDbContext.MySqlDbContext))]
+    [Migration("20250816150201_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -20,16 +20,16 @@ namespace DbContext.Migrations.SqlServerDbContext
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("DbModels.QuoteDbM", b =>
                 {
                     b.Property<Guid>("QuoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Author")
                         .HasColumnType("varchar(200)");

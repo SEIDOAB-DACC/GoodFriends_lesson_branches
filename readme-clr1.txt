@@ -6,6 +6,7 @@ To create the AppWebApi
    ./database-rebuild-all.sh sql-friends sqlserver docker root ../AppWebApi
    ./database-rebuild-all.sh sql-friends mysql docker root ../AppWebApi
    ./database-rebuild-all.sh sql-friends postgresql docker root ../AppWebApi
+  
    
    Windows
    .\database-rebuild-all.ps1 sql-friends sqlserver docker root ..\AppWebApi
@@ -18,7 +19,7 @@ To create the AppWebApi
 2. From Azure Data Studio you can now connect to the database
    Use connection string from user secrets:
    connection string corresponding to Tag
-   "sql-friends.<db_type>.docker.root"
+   "sql-creditcards.<db_type>.docker.root"
 
 3. Run AppWebApi with or without debugger
 

@@ -46,6 +46,8 @@ public class CreditCard : ICreditCard, ISeed<CreditCard>
 
     public string CardHolderName { get; set; }
 
+    public string EncryptedToken { get; set; } //AES encrypted version of the cc
+
     #region Seeder
     public bool Seeded { get; set; } = false;
 
