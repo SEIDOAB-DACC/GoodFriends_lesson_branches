@@ -1,52 +1,44 @@
-# AppWebApi Folder Structure and File Purpose
+## Branch Differences: `0-microsoft-template` → `1-swagger`
 
-This document explains the structure of the `AppWebApi` folder and the purpose of each file in the project.
+### Overview
+Branch `1-swagger` replaces the minimal built-in OpenAPI support with a fully configured Swashbuckle Swagger UI and adds Newtonsoft.Json serialization.
 
-## Creating a Web API Project
+### `AppWebApi/AppWebApi.csproj`
+Two NuGet packages are added:
 
-To create a new ASP.NET Core Web API project, used in the branch, using the .NET CLI:
-
-```bash
-# Create a new Web API project
-dotnet new webapi -n MyWebApi
-
+```xml
+<PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />
 ```
 
-## Folder Structure
+- **Swashbuckle.AspNetCore**: Generates the Swagger UI and OpenAPI JSON document at `/swagger`.
+- **Microsoft.AspNetCore.Mvc.NewtonsoftJson**: Replaces the default `System.Text.Json` serializer with Newtonsoft.Json, enabling options such as circular-reference handling.
 
-```
-AppWebApi/
-├── appsettings.Development.json
-├── appsettings.json
-├── AppWebApi.csproj
-├── AppWebApi.http
-├── Program.cs
-├── WeatherForecast.cs
-├── bin/
-├── Controllers/
-│   └── WeatherForecastController.cs
-├── obj/
-├── Properties/
-│   └── launchSettings.json
-```
+### `AppWebApi/Program.cs`
 
-## File and Folder Purposes
+#### Service registration changes
 
-- **appsettings.Development.json**: Configuration settings for the development environment.
-- **appsettings.json**: Main configuration file for the application (connection strings, logging, etc.).
-- **AppWebApi.csproj**: Project file defining dependencies, build settings, and project metadata.
-- **AppWebApi.http**: HTTP request file for testing API endpoints directly from the editor. You will need VSC “REST Client” extension by Huachao Mao
-- **Program.cs**: Entry point of the application; configures and starts the web server.
-- **WeatherForecast.cs**: Model class used for the weather forecast example endpoint.
-- **bin/**: Output directory for compiled binaries and runtime files.
-- **Controllers/**: Contains API controller classes.
-  - **WeatherForecastController.cs**: Example controller exposing weather forecast endpoints.
-- **obj/**: Intermediate build files and project assets.
-- **Properties/**: Contains project properties and settings.
-  - **launchSettings.json**: Defines how the project is launched (profiles, environment variables, etc.).
+| `0-microsoft-template` | `1-swagger` |
+|---|---|
+| `builder.Services.AddControllers()` | `builder.Services.AddControllers().AddNewtonsoftJson(...)` |
+| *(not present)* | `builder.Services.AddEndpointsApiExplorer()` |
+| *(not present)* | `builder.Services.AddSwaggerGen(...)` |
+
+- **`.AddNewtonsoftJson()`** configures `ReferenceLoopHandling.Ignore` so that object graphs with circular references (e.g. navigation properties) serialize without throwing.
+- **`AddEndpointsApiExplorer()`** makes minimal-API endpoints visible to Swashbuckle.
+- **`AddSwaggerGen()`** registers a named OpenAPI document `v1` with a custom title, description, and a compile-time conditional version string (`v2.0 DEBUG` / `v2.0`).
+
+#### Middleware pipeline changes
+
+| `0-microsoft-template` | `1-swagger` |
+|---|---|
+| `if (IsDevelopment()) { app.MapOpenApi(); }` | `app.UseSwagger(); app.UseSwaggerUI(...)` |
+
+- `MapOpenApi()` (ASP.NET Core built-in) is replaced by `UseSwagger()` + `UseSwaggerUI()` from Swashbuckle.
+- The `IsDevelopment()` guard is commented out intentionally so the Swagger UI is available in all environments (including production) for this teaching example.
+- `UseSwaggerUI()` points to `/swagger/v1/swagger.json` and labels the endpoint *"Seido Friends API v2.0"*.
+
 ---
-
-This structure follows standard ASP.NET Core Web API conventions, supporting configuration, development, and deployment workflows.
 
 ## Security: Microsoft.OpenApi Vulnerability Fix (CVE-2026-49451)
 
