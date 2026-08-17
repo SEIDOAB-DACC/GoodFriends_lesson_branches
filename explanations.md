@@ -7,8 +7,8 @@ This document explains the structure of the `AppWebApi` folder and the purpose o
 To create a new ASP.NET Core Web API project, used in the branch, using the .NET CLI:
 
 ```bash
-# Create a new Web API project
-dotnet new webapi -n MyWebApi
+# Create a new controller-based Web API project
+dotnet new webapi -n MyWebApi --use-controllers
 
 ```
 
