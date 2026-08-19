@@ -93,3 +93,21 @@ Holds configuration for JWT (JSON Web Token) authentication, such as token lifet
 
 ### VersionOptions
 Encapsulates version and build metadata for the application, such as assembly version, file version, informational version, git commit hash, build time, and company/product info. Includes a static method to populate these properties from the current assembly.
+
+## Code Explanations: AppWebApi/Program.cs
+
+### Lines 26–30: Setting Up Configuration Sources
+
+```csharp
+var currentDir = Directory.GetCurrentDirectory();
+var assembly = System.Reflection.Assembly.Load("Configuration");
+builder.Configuration.SetBasePath(Path.Combine(currentDir, "../AppWebApi"))
+        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+        .AddUserSecrets(assembly);
+```
+
+- **Line 26** — `Directory.GetCurrentDirectory()` gets the runtime working directory (where the process is launched from). This is needed to construct an absolute path to `appsettings.json` regardless of where `dotnet run` is invoked.
+- **Line 27** — Loads the `Configuration` assembly by name using reflection. This is necessary because `AddUserSecrets` requires an assembly reference to locate the user secrets ID, which is stored in the `Configuration` project's `.csproj` — not in `AppWebApi`. Without this, user secrets from the `Configuration` project would not be found at runtime.
+- **Line 28** — Sets the base path for file-based configuration to `../AppWebApi` relative to the current directory, so `appsettings.json` is resolved correctly regardless of where the process started.
+- **Line 29** — Adds `appsettings.json` as a configuration source. `optional: true` suppresses errors if the file is missing; `reloadOnChange: true` picks up edits without a process restart.
+- **Line 30** — Wires in user secrets scoped to the `Configuration` assembly, keeping sensitive development values (connection strings, keys) out of source control.
