@@ -1,4 +1,4 @@
-# Step-by-step code changes: 7-services to 7m-services
+# Step-by-step code exercise of 7-services to add a database context and land in 7m-services
 
 Start in the `7-services` branch in VS Code.
 
