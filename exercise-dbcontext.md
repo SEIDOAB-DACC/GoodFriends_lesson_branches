@@ -26,7 +26,51 @@ Purpose:
 
 ---
 
-## 2. Inspect the current design before editing
+## 2. Create the `DbContext` project folder and project file
+
+Create a new folder named `DbContext` in the solution root.
+
+Inside that folder, create a project file named `DbContext.csproj` with this exact content:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Configuration\Configuration.csproj" />
+    <ProjectReference Include="..\Models\Models.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10"/>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.10"/>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.10" />
+  </ItemGroup>
+    <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+  </ItemGroup>
+
+</Project>
+```
+
+Purpose:
+- This creates the dedicated project that will host the EF Core database context and migration tooling.
+- It gives the app a clear separation between the business service layer and the data access layer.
+- It includes the EF Core packages needed for SQL Server, migrations, and code-first database creation.
+
+---
+
+## 3. Inspect the current design before editing
 
 Open these files:
 
@@ -42,7 +86,7 @@ Purpose:
 
 ---
 
-## 3. Add the project reference to the database project
+## 4. Add the project reference to the database project
 
 In `AppWebApi/AppWebApi.csproj`, add:
 
