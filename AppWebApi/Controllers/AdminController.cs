@@ -9,6 +9,7 @@ using Configuration.Options;
 
 using Microsoft.Extensions.Options;
 using Models;
+using DbContext;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -27,6 +28,7 @@ namespace AppWebApi.Controllers
         readonly Encryptions _encryptions = null;
         readonly DatabaseConnections _dbConnections = null;
         readonly IAdminService _service;
+        readonly MainDbContext _context;
 
 
         //GET: api/admin/environment
@@ -70,13 +72,23 @@ namespace AppWebApi.Controllers
         [ActionName("Quotes")]
         [ProducesResponseType(200, Type = typeof(List<IQuote>))]
         [ProducesResponseType(400, Type = typeof(string))]
-        public IActionResult Quotes()
+        public async Task<IActionResult> Quotes()
         {
-            try
+            try 
             {
                 _logger.LogInformation($"{nameof(Quotes)}");
                 var quotes = _service.Quotes();
 
+                var quotesdb = quotes.Select(q => new Quote
+                {           
+                    QuoteId = q.QuoteId,
+                    QuoteText = q.QuoteText,
+                    Author = q.Author
+                });
+                _context.Quotes.AddRange(quotesdb);
+
+                //Save changes to the database
+                await _context.SaveChangesAsync();
                 return Ok(quotes);
             }
             catch (Exception ex)
@@ -149,7 +161,8 @@ namespace AppWebApi.Controllers
                     IOptions<JwtOptions> jwtOptions,
                     IOptions<VersionOptions> versionOptions,
                     Encryptions encryptions, DatabaseConnections dbConnections,
-                    IAdminService service)
+                    IAdminService service,
+                    MainDbContext context)
         {
             _logger = logger;
 
@@ -163,6 +176,7 @@ namespace AppWebApi.Controllers
             _dbConnections = dbConnections;
 
             _service = service;
+            _context = context;
 
         }
     }

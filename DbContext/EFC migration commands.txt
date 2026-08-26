@@ -1,0 +1,25 @@
+﻿In Visual Studio Code  open a terminal in DbContext project.
+
+Visual Studio Code to drop the Database.
+----------------------------------------------------------------------------
+In the terminal, type below commands. After each committment you will get a success confirmation
+SQLServer:
+dotnet ef database drop -f 
+
+Visual Studio Code Database migrations.
+--------------------------------
+In the terminal, type below commands. After each migration you will get a success confirmation from EFC.
+Use command depending on your database.
+
+SQLServer:
+dotnet ef migrations add initial_migration
+
+
+Visual Studio Code Commit the migrations to the Database (create or update the databases).
+----------------------------------------------------------------------------
+In the terminal, type below commands. After each committment you will get a success confirmation
+SQLServer:
+dotnet ef database update
+
+
+

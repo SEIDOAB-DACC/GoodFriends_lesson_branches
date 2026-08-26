@@ -1,5 +1,7 @@
 ﻿using Configuration;
 using Configuration.Options;
+using DbContext;
+using Microsoft.EntityFrameworkCore;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -54,6 +56,14 @@ builder.Services.Configure<VersionOptions>(options =>VersionOptions.ReadFromAsse
 //Inject Custom logger, this will also register the InMemoryLoggerProvider logger
 //hence, AddLogging should not be used here
 builder.Services.AddSingleton<ILoggerProvider, InMemoryLoggerProvider>();
+
+
+// adding DbContexts
+builder.Services.AddDbContext<MainDbContext>(options =>
+{
+    var connectionString = "Data Source=localhost,14333;Initial Catalog=sql-friends;Persist Security Info=True;User ID=sa;Pwd=skYhgS@83#aQ;Encrypt=False;";
+    options.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
+});
 
 
 #endregion
