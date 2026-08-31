@@ -1,6 +1,6 @@
 # Exercise: Extending the GoodFriends Project with a Credit Card Model
 
-This exercise will guide you through extending the current codebase (branch `8-extensions`) by adding a new Credit Card model and integrating it into the data access layer. Finally we will remove the Quote Models
+This exercise will guide you through extending the current codebase (branch `10-extensions`) by adding a new Credit Card model and integrating it into the data access layer. Finally we will remove the Quote Models
 
 ## Prerequisites
 - You have cloned the repository and checked out the `10-extensions` branch.
