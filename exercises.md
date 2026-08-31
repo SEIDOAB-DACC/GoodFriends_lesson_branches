@@ -3,7 +3,7 @@
 This exercise will guide you through extending the current codebase (branch `8-extensions`) by adding a new Credit Card model and integrating it into the data access layer. Finally we will remove the Quote Models
 
 ## Prerequisites
-- You have cloned the repository and checked out the `8-extensions` branch.
+- You have cloned the repository and checked out the `10-extensions` branch.
 - You have a working .NET development environment.
 
 ---
@@ -11,7 +11,7 @@ This exercise will guide you through extending the current codebase (branch `8-e
 ## Steps
 
 ### 1. Create a New Feature Branch
-Create a new branch from `8-extensions` for your work. Name it `8a-extensions-creditcard`
+Create a new branch from `10-extensions` for your work. Name it `10a-extensions-creditcard`
 
 ---
 
