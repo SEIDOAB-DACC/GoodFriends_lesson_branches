@@ -26,7 +26,7 @@ Create a new branch from `10-extensions` for your work. Name it `10a-extensions-
 
 ### 3. Rename the database
 
-- In readme-clr1.txt, database-rebuild-all.ps, database-rebuild-all.sh, appsettings.json, secrets.json file rename `sql-friends`to name `sql-creditcards`
+- In readme-clr1.txt, database-rebuild-all.ps, database-rebuild-all.sh, appsettings.json, secrets.json file rename `sql-creditcards`to name `sql-creditcards`
 
 ---
 

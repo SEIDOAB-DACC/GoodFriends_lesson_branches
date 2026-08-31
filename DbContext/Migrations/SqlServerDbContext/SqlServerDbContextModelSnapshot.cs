@@ -22,21 +22,33 @@ namespace DbContext.Migrations.SqlServerDbContext
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DbModels.QuoteDbM", b =>
+            modelBuilder.Entity("DbModels.CreditCardDbM", b =>
                 {
-                    b.Property<Guid>("QuoteId")
+                    b.Property<Guid>("CreditCardId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Author")
+                    b.Property<string>("CardHolderName")
                         .HasColumnType("varchar(200)");
 
-                    b.Property<string>("QuoteText")
+                    b.Property<string>("ExpirationMonth")
                         .HasColumnType("varchar(200)");
 
-                    b.HasKey("QuoteId");
+                    b.Property<string>("ExpirationYear")
+                        .HasColumnType("varchar(200)");
 
-                    b.ToTable("Quotes");
+                    b.Property<int>("Issuer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("Seeded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("CreditCardId");
+
+                    b.ToTable("CreditCards");
                 });
 #pragma warning restore 612, 618
         }
