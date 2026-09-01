@@ -129,14 +129,12 @@ In `DbRepos/AdminDbRepos.cs`, update the `SeedAsync` method to seed `nrItems` `C
 USE File explorer
 - Copy the entire solution folder GoodFriends_lesson_branches
 - Rename the new folder to CreditCards
+- In the CreditCards folder rename files GoodFriends.slnx and GoodFriends.code-workspace 
+  to CreditCards.slnx and CreditCards.code-workspace
 - Delete the .git folder in CreditCards
 
-USE Visual Studio Code
-- Open the folder CreditCards
-- Delete the file GoodFriends.code-workspace
-- Create a new Workspace using File->Save Workspace As...
-- Rename file GoodFriends.sln to CreditCards.sln 
-- Rename GoodFriends.sln to CreditCards.slnin in tasks.json
+Open CreditCards in Visual Studio Code by double clicking on CreditCards.code-workspace
+- Rename GoodFriends.slnx to CreditCards.slnx in tasks.json (3 places)
 - Make an intial git commit
 - Publish your repo to your gitub
 
