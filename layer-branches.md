@@ -25,6 +25,7 @@ Number prefix to get right sort order in VS Code.
 | Models        | 2.Domain.Models             | Domain models — DTOs mapped to/from database entry models via AutoMapper |
 | DbRepos       | 3a.DataAccess.Repos         | Repository layer — CRUD operations via EF Core |
 | DbContext     | 3b.DataAccess.DbContext     | EF Core DbContext — database connection and change tracking |
+| DbModels      | 3c.DataAccess.EntryModels   | Database entry models — map directly to database tables |
 | Configuration | 4.CrossCut.Concerns         | Cross-cutting concerns — settings, logging, DI extensions |
 
 ## Lesson Branches
