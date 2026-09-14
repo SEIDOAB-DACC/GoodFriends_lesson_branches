@@ -2,7 +2,7 @@
 
 namespace Models;
 
-public class csFriend : IFriend, ISeed<csFriend>
+public class Friend : IFriend, ISeed<Friend>
 {
     public virtual Guid FriendId { get; set; }
 
@@ -26,9 +26,9 @@ public class csFriend : IFriend, ISeed<csFriend>
     public virtual List<ICreditCard> CreditCards { get; set; } = null;
 
     #region contructors
-    public csFriend() { }
+    public Friend() { }
 
-    public csFriend(csFriend org)
+    public Friend(Friend org)
     {
         this.Seeded = org.Seeded;
 
@@ -48,7 +48,7 @@ public class csFriend : IFriend, ISeed<csFriend>
     #region randomly seed this instance
     public bool Seeded { get; set; } = false;
 
-    public virtual csFriend Seed(SeedGenerator sgen)
+    public virtual Friend Seed(SeedGenerator sgen)
     {
         Seeded = true;
         FriendId = Guid.NewGuid();
