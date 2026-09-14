@@ -46,7 +46,7 @@ public QuoteDbM UpdateFromDTO(QuoteCuDto org)
 
 **Purpose:** after a create/update writes to the database, the caller expects the fully populated, up-to-date item back (with its related friends included) rather than the raw DTO it sent in. A reusable single-item read gives `Create`/`Update` (and later a `ReadItem` controller action) one consistent way to fetch that.
 
-`QuotesDbRepos` currently only has the paged `ReadQuotesAsync`. Add a single-item version, mirroring `ReadFriendAsync`:
+`QuotesDbRepos` currently only has the paged `ReadQuotesAsync`. Both `Create` and `Update` need to return a single populated item afterward, exactly like `ReadFriendAsync` does for Friends — so add it first:
 
 ```csharp
 public async Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat)
@@ -57,9 +57,57 @@ public async Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat)
 }
 ```
 
-## Step 4 — Add `CreateQuoteAsync` to `QuotesDbRepos`
+## Step 4 — Extend `IQuotesService` and `QuotesServiceDb`
 
-**Purpose:** this is the actual "C" in CRUD — turning a validated DTO into a new row (plus join-table rows for any `FriendsId` supplied). The guard clause enforces that clients can't dictate an existing id.
+**Purpose:** the controller depends on the `IQuotesService` abstraction, not on `QuotesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them. Keeping these calls 1:1 pass-throughs matches how thin this service layer is elsewhere in the project.
+
+`Services/IQuotesService.cs`:
+```csharp
+public Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat);
+```
+
+`Services/QuotesServiceDb.cs` — add the same thin 1:1 pass-through calls used for Friends:
+```csharp
+public Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat) => _repo.ReadQuoteAsync(id, flat);
+```
+
+## Step 5 — Extend `QuotesController`
+
+**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update, following standard REST conventions — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single quote (and its CU-DTO shape) for testing and for client edit forms.
+
+Mirror `FriendsController`'s `ReadItem`, `ReadItemDto`, `UpdateItem` and add a `CreateItem`:
+
+```csharp
+[HttpGet()]
+[ActionName("ReadItem")]
+public async Task<IActionResult> ReadItem(string id = null, string flat = "false") { /* mirror FriendsController */ }
+
+[HttpGet()]
+[ActionName("ReadItemDto")]
+public async Task<IActionResult> ReadItemDto(string id = null) { /* return new QuoteCuDto(item.Item) */ }
+```
+
+## Step 6 — Add `UpdateQuoteAsync` to `QuotesDbRepos`
+
+**Purpose:** this is the "U" in CRUD — loading the tracked entity (with its related friends included), applying the incoming scalar and relationship changes, then persisting them in a single unit of work. EF Core will diff the incoming `FriendsDbM` list against the join table and add/remove rows as needed.
+
+Mirror the real, working `UpdateFriendAsync` exactly:
+
+```csharp
+public async Task<ResponseItemDto<IQuote>> UpdateQuoteAsync(QuoteCuDto itemDto)
+{
+    // 1. Find existing QuoteDbM by itemDto.QuoteId, .Include(i => i.FriendsDbM)
+    // 2. throw ArgumentException if not found
+    // 3. item.UpdateFromDTO(itemDto)
+    // 4. update the FriendsDbM navigation list (AFTER Step 10 — Navigation property helper)
+    // 5. _dbContext.Quotes.Update(item); await _dbContext.SaveChangesAsync();
+    // 6. return await ReadQuoteAsync(item.QuoteId, false);
+}
+```
+
+## Step 7 — Add `CreateQuoteAsync` to `QuotesDbRepos`
+
+**Purpose:** this is the actual "C" in CRUD — turning a validated DTO into a new row (plus join-table rows for any `FriendsId` supplied). The guard clause enforces that clients can't dictate an existing id (that would blur the line between create and update).
 
 Follow the documented pattern from `explanations.md`:
 
@@ -72,7 +120,7 @@ public async Task<ResponseItemDto<IQuote>> CreateQuoteAsync(QuoteCuDto itemDto)
     // 2. Create a new QuoteDbM and populate scalar props (new QuoteDbM().UpdateFromDTO(itemDto))
     //    (QuoteId is DB-generated — do not set it manually)
 
-    // 3. Populate the FriendsDbM navigation list (Step 6 helper)
+    // 3. Populate the FriendsDbM navigation list (AFTER Step 10 — Navigation property helper)
 
     // 4. _dbContext.Quotes.Add(item); await _dbContext.SaveChangesAsync();
 
@@ -80,69 +128,29 @@ public async Task<ResponseItemDto<IQuote>> CreateQuoteAsync(QuoteCuDto itemDto)
 }
 ```
 
-## Step 5 — Add `UpdateQuoteAsync` to `QuotesDbRepos`
+## Step 8 — Extend `IQuotesService` and `QuotesServiceDb`
 
-**Purpose:** this is the "U" in CRUD — loading the tracked entity (with its related friends included), applying the incoming scalar and relationship changes, then persisting them in a single unit of work. EF Core will diff the incoming `FriendsDbM` list against the join table and add/remove rows as needed.
-
-Mirror the real, working `UpdateFriendAsync`:
-
-```csharp
-public async Task<ResponseItemDto<IQuote>> UpdateQuoteAsync(QuoteCuDto itemDto)
-{
-    // 1. Find existing QuoteDbM by itemDto.QuoteId, .Include(i => i.FriendsDbM)
-    // 2. throw ArgumentException if not found
-    // 3. item.UpdateFromDTO(itemDto)
-    // 4. update the FriendsDbM navigation list (Step 6 helper)
-    // 5. _dbContext.Quotes.Update(item); await _dbContext.SaveChangesAsync();
-    // 6. return await ReadQuoteAsync(item.QuoteId, false);
-}
-```
-
-## Step 6 — Navigation property helper
-
-**Purpose:** converts the flat `FriendsId` list on the DTO into actual tracked `FriendDbM` entities EF Core can wire up as the many-to-many relationship. Validating that every id exists before attaching it prevents silently creating dangling/incorrect relationships. Sharing one helper between `Create` and `Update` avoids duplicating this lookup logic.
-
-```csharp
-private async Task navProp_QuoteCuDto_to_QuoteDbM(QuoteCuDto itemDtoSrc, QuoteDbM itemDst)
-{
-    // if itemDtoSrc.FriendsId != null: look up each FriendDbM by id (throw if missing), build List<FriendDbM>
-    // else: set itemDst.FriendsDbM = null
-}
-```
-
-Call this helper from both `CreateQuoteAsync` and `UpdateQuoteAsync`, just like Friends does.
-
-## Step 7 — Extend `IQuotesService` and `QuotesServiceDb`
-
-**Purpose:** the controller depends on the `IQuotesService` abstraction, not on `QuotesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them.
+**Purpose:** the controller depends on the `IQuotesService` abstraction, not on `QuotesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them. Keeping these calls 1:1 pass-throughs matches how thin this service layer is elsewhere in the project.
 
 `Services/IQuotesService.cs`:
 ```csharp
-public Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat);
 public Task<ResponseItemDto<IQuote>> CreateQuoteAsync(QuoteCuDto item);
 public Task<ResponseItemDto<IQuote>> UpdateQuoteAsync(QuoteCuDto item);
 ```
 
-`Services/QuotesServiceDb.cs` — thin 1:1 pass-throughs, matching the existing style:
+`Services/QuotesServiceDb.cs` — add the same thin 1:1 pass-through calls used for Friends:
 ```csharp
-public Task<ResponseItemDto<IQuote>> ReadQuoteAsync(Guid id, bool flat) => _repo.ReadQuoteAsync(id, flat);
 public Task<ResponseItemDto<IQuote>> CreateQuoteAsync(QuoteCuDto item) => _repo.CreateQuoteAsync(item);
 public Task<ResponseItemDto<IQuote>> UpdateQuoteAsync(QuoteCuDto item) => _repo.UpdateQuoteAsync(item);
 ```
 
-## Step 8 — Extend `QuotesController`
+## Step 9 — Extend `QuotesController`
 
-**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single quote (and its CU-DTO shape) for testing.
+**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update, following standard REST conventions — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single quote (and its CU-DTO shape) for testing and for client edit forms.
+
+Mirror `FriendsController`'s `ReadItem`, `ReadItemDto`, `UpdateItem` and add a `CreateItem`:
 
 ```csharp
-[HttpGet()]
-[ActionName("ReadItem")]
-public async Task<IActionResult> ReadItem(string id = null, string flat = "false") { /* mirror FriendsController */ }
-
-[HttpGet()]
-[ActionName("ReadItemDto")]
-public async Task<IActionResult> ReadItemDto(string id = null) { /* return new QuoteCuDto(item.Item) */ }
-
 [HttpPost()]
 [ActionName("CreateItem")]
 public async Task<IActionResult> CreateItem([FromBody] QuoteCuDto item) { /* call _service.CreateQuoteAsync(item) */ }
@@ -155,7 +163,23 @@ public async Task<IActionResult> UpdateItem(string id, [FromBody] QuoteCuDto ite
 }
 ```
 
-## Step 9 — Verify
+## Step 10 — Navigation property helper
+
+**Purpose:** converts the flat `FriendsId` list on the DTO into actual tracked `FriendDbM` entities EF Core can wire up as the many-to-many relationship. Validating that every id exists before attaching it prevents silently creating dangling/incorrect relationships. Sharing one helper between `Create` and `Update` avoids duplicating this lookup logic.
+
+Add a private helper analogous to `navProp_FriendCUdto_to_FriendDbM`, but for the `FriendsId` list only:
+
+```csharp
+private async Task navProp_QuoteCuDto_to_QuoteDbM(QuoteCuDto itemDtoSrc, QuoteDbM itemDst)
+{
+    // if itemDtoSrc.FriendsId != null: look up each FriendDbM by id (throw if missing), build List<FriendDbM>
+    // else: set itemDst.FriendsDbM = null
+}
+```
+
+Revisit Step 6 and 7 and call this helper from both `CreateQuoteAsync` and `UpdateQuoteAsync`, just like Friends does.
+
+## Step 11 — Verify
 
 **Purpose:** confirms the full round trip works end-to-end and that the guard clauses actually reject bad input, not just that the code compiles.
 
