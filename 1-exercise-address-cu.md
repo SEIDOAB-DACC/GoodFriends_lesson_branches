@@ -59,7 +59,56 @@ public async Task<ResponseItemDto<IAddress>> ReadAddressAsync(Guid id, bool flat
 }
 ```
 
-## Step 4 — Add `CreateAddressAsync` to `AddressesDbRepos`
+## Step 4 — Extend `IAddressesService` and `AddressesServiceDb`
+
+**Purpose:** the controller depends on the `IAddressesService` abstraction, not on `AddressesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them. Keeping these calls 1:1 pass-throughs matches how thin this service layer is elsewhere in the project.
+
+`Services/IAddressesService.cs`:
+```csharp
+public Task<ResponseItemDto<IAddress>> ReadAddressAsync(Guid id, bool flat);
+```
+
+`Services/AddressesServiceDb.cs` — add the same thin 1:1 pass-through calls used for Friends:
+```csharp
+public Task<ResponseItemDto<IAddress>> ReadAddressAsync(Guid id, bool flat) => _repo.ReadAddressAsync(id, flat);
+```
+
+## Step 5 — Extend `AddressesController`
+
+**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update, following standard REST conventions — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single address (and its CU-DTO shape) for testing and for client edit forms.
+
+Mirror `FriendsController`'s `ReadItem`, `ReadItemDto`, `UpdateItem` and add a `CreateItem`:
+
+```csharp
+[HttpGet()]
+[ActionName("ReadItem")]
+public async Task<IActionResult> ReadItem(string id = null, string flat = "false") { /* mirror FriendsController */ }
+
+[HttpGet()]
+[ActionName("ReadItemDto")]
+public async Task<IActionResult> ReadItemDto(string id = null) { /* return new AddressCuDto(item.Item) */ }
+```
+
+
+## Step 6 — Add `UpdateAddressAsync` to `AddressesDbRepos`
+
+**Purpose:** this is the "U" in CRUD — loading the tracked entity (with its navigation collections included), applying the incoming scalar and relationship changes, then persisting them in a single unit of work.
+
+Mirror the real, working `UpdateFriendAsync` exactly:
+
+```csharp
+public async Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto itemDto)
+{
+    // 1. Find existing AddressDbM by itemDto.AddressId, .Include(i => i.FriendsDbM)
+    // 2. throw ArgumentException if not found
+    // 3. item.UpdateFromDTO(itemDto)
+    // 4. update navigation properties (AFTER Step 10 — Navigation property helper)
+    // 5. _dbContext.Addresses.Update(item); await _dbContext.SaveChangesAsync();
+    // 6. return await ReadAddressAsync(item.AddressId, false);
+}
+```
+
+## Step 7 — Add `CreateAddressAsync` to `AddressesDbRepos`
 
 **Purpose:** this is the actual "C" in CRUD — turning a validated DTO into a new row. The guard clause enforces that clients can't dictate an existing id (that would blur the line between create and update), and the DB-generated key keeps id assignment consistent with how every other entity in this project is created.
 
@@ -74,7 +123,7 @@ public async Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto ite
     // 2. Create a new AddressDbM and populate scalar props (new AddressDbM().UpdateFromDTO(itemDto))
     //    (AddressId is DB-generated — do not set it manually, see ValueGeneratedOnAdd in the migrations)
 
-    // 3. Populate navigation properties (Step 6 helper)
+    // 3. Populate navigation properties (AFTER Step 10 — Navigation property helper)
 
     // 4. _dbContext.Addresses.Add(item); await _dbContext.SaveChangesAsync();
 
@@ -82,25 +131,43 @@ public async Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto ite
 }
 ```
 
-## Step 5 — Add `UpdateAddressAsync` to `AddressesDbRepos`
 
-**Purpose:** this is the "U" in CRUD — loading the tracked entity (with its navigation collections included), applying the incoming scalar and relationship changes, then persisting them in a single unit of work.
+## Step 8 — Extend `IAddressesService` and `AddressesServiceDb`
 
-Mirror the real, working `UpdateFriendAsync` exactly:
+**Purpose:** the controller depends on the `IAddressesService` abstraction, not on `AddressesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them. Keeping these calls 1:1 pass-throughs matches how thin this service layer is elsewhere in the project.
+
+`Services/IAddressesService.cs`:
+```csharp
+public Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto item);
+public Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto item);
+```
+
+`Services/AddressesServiceDb.cs` — add the same thin 1:1 pass-through calls used for Friends:
+```csharp
+public Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto item) => _repo.CreateAddressAsync(item);
+public Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto item) => _repo.UpdateAddressAsync(item);
+```
+
+## Step 9 — Extend `AddressesController`
+
+**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update, following standard REST conventions — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single address (and its CU-DTO shape) for testing and for client edit forms.
+
+Mirror `FriendsController`'s `ReadItem`, `ReadItemDto`, `UpdateItem` and add a `CreateItem`:
 
 ```csharp
-public async Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto itemDto)
+[HttpPost()]
+[ActionName("CreateItem")]
+public async Task<IActionResult> CreateItem([FromBody] AddressCuDto item) { /* call _service.CreateAddressAsync(item) */ }
+
+[HttpPut("{id}")]
+[ActionName("UpdateItem")]
+public async Task<IActionResult> UpdateItem(string id, [FromBody] AddressCuDto item)
 {
-    // 1. Find existing AddressDbM by itemDto.AddressId, .Include(i => i.FriendsDbM)
-    // 2. throw ArgumentException if not found
-    // 3. item.UpdateFromDTO(itemDto)
-    // 4. update navigation properties (Step 6 helper)
-    // 5. _dbContext.Addresses.Update(item); await _dbContext.SaveChangesAsync();
-    // 6. return await ReadAddressAsync(item.AddressId, false);
+    // Guid.Parse(id), verify item.AddressId == idArg, call _service.UpdateAddressAsync(item)
 }
 ```
 
-## Step 6 — Navigation property helper
+## Step 10 — Navigation property helper
 
 **Purpose:** converts the flat `FriendsId` list on the DTO into actual tracked `FriendDbM` entities EF Core can wire up as a relationship. Validating that every id exists before attaching it prevents silently creating dangling/incorrect relationships. Sharing one helper between `Create` and `Update` avoids duplicating this lookup logic.
 
@@ -114,54 +181,10 @@ private async Task navProp_AddressCuDto_to_AddressDbM(AddressCuDto itemDtoSrc, A
 }
 ```
 
-Call this helper from both `CreateAddressAsync` and `UpdateAddressAsync`, just like Friends does.
+Revisit Step 6 and 7 and call this helper from both `CreateAddressAsync` and `UpdateAddressAsync`, just like Friends does.
 
-## Step 7 — Extend `IAddressesService` and `AddressesServiceDb`
 
-**Purpose:** the controller depends on the `IAddressesService` abstraction, not on `AddressesDbRepos` directly, so the new repo methods must be exposed through the service interface and its implementation before a controller can call them. Keeping these calls 1:1 pass-throughs matches how thin this service layer is elsewhere in the project.
-
-`Services/IAddressesService.cs`:
-```csharp
-public Task<ResponseItemDto<IAddress>> ReadAddressAsync(Guid id, bool flat);
-public Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto item);
-public Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto item);
-```
-
-`Services/AddressesServiceDb.cs` — add the same thin 1:1 pass-through calls used for Friends:
-```csharp
-public Task<ResponseItemDto<IAddress>> ReadAddressAsync(Guid id, bool flat) => _repo.ReadAddressAsync(id, flat);
-public Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto item) => _repo.CreateAddressAsync(item);
-public Task<ResponseItemDto<IAddress>> UpdateAddressAsync(AddressCuDto item) => _repo.UpdateAddressAsync(item);
-```
-
-## Step 8 — Extend `AddressesController`
-
-**Purpose:** exposes the new service methods as HTTP endpoints — `POST` for create and `PUT {id}` for update, following standard REST conventions — and adds the `ReadItem`/`ReadItemDto` actions needed to fetch a single address (and its CU-DTO shape) for testing and for client edit forms.
-
-Mirror `FriendsController`'s `ReadItem`, `ReadItemDto`, `UpdateItem` and add a `CreateItem`:
-
-```csharp
-[HttpGet()]
-[ActionName("ReadItem")]
-public async Task<IActionResult> ReadItem(string id = null, string flat = "false") { /* mirror FriendsController */ }
-
-[HttpGet()]
-[ActionName("ReadItemDto")]
-public async Task<IActionResult> ReadItemDto(string id = null) { /* return new AddressCuDto(item.Item) */ }
-
-[HttpPost()]
-[ActionName("CreateItem")]
-public async Task<IActionResult> CreateItem([FromBody] AddressCuDto item) { /* call _service.CreateAddressAsync(item) */ }
-
-[HttpPut("{id}")]
-[ActionName("UpdateItem")]
-public async Task<IActionResult> UpdateItem(string id, [FromBody] AddressCuDto item)
-{
-    // Guid.Parse(id), verify item.AddressId == idArg, call _service.UpdateAddressAsync(item)
-}
-```
-
-## Step 9 — Verify
+## Step 11 — Verify
 
 **Purpose:** confirms the full round trip works end-to-end and that the guard clauses actually reject bad input, not just that the code compiles.
 
