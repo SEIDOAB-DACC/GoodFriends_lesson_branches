@@ -118,8 +118,7 @@ public async Task<ResponseItemDto<IPet>> CreatePetAsync(PetCuDto itemDto)
     // 1. Guard: PetId must be null when creating
     if (itemDto.PetId != null) throw new ArgumentException($"{nameof(itemDto.PetId)} must be null when creating a new object");
 
-    // 2. Create a new PetDbM and populate scalar props (new PetDbM().UpdateFromDTO(itemDto))
-    //    (PetId is DB-generated — do not set it manually)
+    // 2. Create a new PetDbM and populate scalar props (new PetDbM(){PetId = Guid.NewGuid()}.UpdateFromDTO(itemDto))
 
     // 3. Resolve and assign the owning Friend (DO STEP 10 NOW — Navigation property helper) — required, so missing/invalid FriendId must throw
 

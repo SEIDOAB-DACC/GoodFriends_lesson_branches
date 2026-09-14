@@ -120,8 +120,7 @@ public async Task<ResponseItemDto<IAddress>> CreateAddressAsync(AddressCuDto ite
     // 1. Guard: AddressId must be null when creating
     if (itemDto.AddressId != null) throw new ArgumentException($"{nameof(itemDto.AddressId)} must be null when creating a new object");
 
-    // 2. Create a new AddressDbM and populate scalar props (new AddressDbM().UpdateFromDTO(itemDto))
-    //    (AddressId is DB-generated — do not set it manually, see ValueGeneratedOnAdd in the migrations)
+    // 2. Create a new AddressDbM and populate scalar props (new AddressDbM(){AddressId = Guid.NewGuid()}.UpdateFromDTO(itemDto))
 
     // 3. Populate navigation properties (AFTER Step 10 — Navigation property helper)
 

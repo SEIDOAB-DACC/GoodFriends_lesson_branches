@@ -117,8 +117,7 @@ public async Task<ResponseItemDto<IQuote>> CreateQuoteAsync(QuoteCuDto itemDto)
     // 1. Guard: QuoteId must be null when creating
     if (itemDto.QuoteId != null) throw new ArgumentException($"{nameof(itemDto.QuoteId)} must be null when creating a new object");
 
-    // 2. Create a new QuoteDbM and populate scalar props (new QuoteDbM().UpdateFromDTO(itemDto))
-    //    (QuoteId is DB-generated — do not set it manually)
+    // 2. Create a new QuoteDbM and populate scalar props (new QuoteDbM(){QuoteId = Guid.NewGuid()}.UpdateFromDTO(itemDto))
 
     // 3. Populate the FriendsDbM navigation list (AFTER Step 10 — Navigation property helper)
 
