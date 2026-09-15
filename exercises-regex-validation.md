@@ -115,7 +115,7 @@ parentheses, and dashes used in longer quotes aren't allowed.
 
 **Task:**
 1. Add Swedish letters `åäöÅÄÖ`.
-2. Allow colon `:`, semicolon `;`, parentheses `()`, and hyphen/dash `-` for
+2. Allow colon `:`, parentheses `()`, and hyphen/dash `-` for
    quotes that use them stylistically.
 
 **Valid test input:** `Det är bättre att tända ett ljus än att förbanna mörkret.`
