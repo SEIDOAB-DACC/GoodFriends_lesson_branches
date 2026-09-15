@@ -39,7 +39,7 @@ public class FriendCuDto
     }
     public void EnsureValidity()
     {
-        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        // TODO (Exercise 1, see exercises-regex-validation.md): allow Swedish letters and name punctuation
         if (!string.IsNullOrEmpty(FirstName) && !Regex.IsMatch(FirstName, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("FirstName can only contain letters (a-z), numbers (0-9), and spaces.");
@@ -92,15 +92,17 @@ public class AddressCuDto
 
     public void EnsureValidity()
     {
-        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        // TODO (Exercise 2, see exercises-regex-validation.md): allow Swedish letters and address punctuation
         if (!string.IsNullOrEmpty(StreetAddress) && !Regex.IsMatch(StreetAddress, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("StreetAddress can only contain letters (a-z), numbers (0-9), and spaces.");
         }
+        // TODO (Exercise 3, see exercises-regex-validation.md): allow Swedish letters and hyphenated city names
         if (!string.IsNullOrEmpty(City) && !Regex.IsMatch(City, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("City can only contain letters (a-z), numbers (0-9), and spaces.");
         }
+        // TODO (Exercise 4, see exercises-regex-validation.md): allow Swedish letters in country names
         if (!string.IsNullOrEmpty(Country) && !Regex.IsMatch(Country, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("Country can only contain letters (a-z), numbers (0-9), and spaces.");
@@ -133,7 +135,7 @@ public class PetCuDto
 
     public void EnsureValidity()
     {
-        // RegEx check to ensure filter only contains a-z, 0-9, and spaces
+        // TODO (Exercise 7, see exercises-regex-validation.md): allow Swedish letters and pet-name punctuation
         if (!string.IsNullOrEmpty(Name) && !Regex.IsMatch(Name, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("Name can only contain letters (a-z), numbers (0-9), and spaces.");
@@ -166,11 +168,12 @@ public class QuoteCuDto
 
     public void EnsureValidity()
     {
-        // RegEx check to ensure filter only contains a-z, 0-9, spaces, and punctuation (.,!?')
+        // TODO (Exercise 5, see exercises-regex-validation.md): allow Swedish letters and more punctuation
         if (!string.IsNullOrEmpty(Quote) && !Regex.IsMatch(Quote, @"^[a-zA-Z0-9\s.,!?']*$"))
         {
             throw new ArgumentException("Quote can only contain letters (a-z), numbers (0-9), spaces, and punctuation (.,!?').");
         }
+        // TODO (Exercise 6, see exercises-regex-validation.md): allow Swedish letters, periods for initials, and hyphens
         if (!string.IsNullOrEmpty(Author) && !Regex.IsMatch(Author, @"^[a-zA-Z0-9\s]*$"))
         {
             throw new ArgumentException("Author can only contain letters (a-z), numbers (0-9), and spaces.");
