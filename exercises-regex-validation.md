@@ -96,7 +96,7 @@ way inside the `@"..."` string in code.
 
 **Current pattern:** `^[a-zA-Z0-9\s]*$`
 
-**Problem:** Swedish spellings of country names, e.g. `Förenta staterna` or `Storbritannien`, are rejected because of `ö`/`ä`/`å`... wait, actually `Storbritannien` only uses ASCII, but `Förenta staterna` needs `ö`.
+**Problem:** Swedish spellings of country names, e.g. `Förenta staterna` are rejected because of `ö`/`ä`/`å`
 
 **Task:**
 1. Add Swedish letters `åäöÅÄÖ` to the character class.
